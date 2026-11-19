@@ -1,0 +1,660 @@
+:root {
+  /* Thème bleu ciel et blanc */
+  --primaire: #0288d1;
+  --primaire-fonce: #01579b;
+  --ciel: #4fc3f7;
+  --ciel-pale: #e1f5fe;
+  --fond: #f5fbff;
+  --bord: #dcebf5;
+  --texte: #1f2933;
+  --gris: #6b7785;
+  --danger: #d32f2f;
+  --attention: #f57c00;
+  /* ─── Police et tailles de toute l'application ───
+     Une seule police (Inter) ; taille de base 15 px (lisible sans charger les tableaux).
+     Toutes les autres tailles sont en rem : elles suivent cette base. */
+  --police: 'Inter Variable', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --police-code: Consolas, 'Cascadia Mono', 'Courier New', monospace;
+  font-family: var(--police);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--texte);
+  background: var(--fond);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Les champs et boutons reprennent la police de la page (sinon le navigateur impose la sienne) */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+/* Chiffres de même largeur dans les tableaux : montants et quantités bien alignés */
+table,
+.num,
+.nombre {
+  font-variant-numeric: tabular-nums;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+}
+
+a {
+  color: var(--primaire);
+}
+
+/* ─── Mise en page ─── */
+.entete-page {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.carte {
+  background: #fff;
+  border: 1px solid var(--bord);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgb(2 136 209 / 0.05);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filtres {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.vide {
+  text-align: center;
+  color: var(--gris);
+  padding: 2rem;
+}
+
+/* ─── Formulaires ─── */
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--gris);
+}
+
+label.case {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--texte);
+  font-weight: 500;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--texte);
+  min-width: 0;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid color-mix(in srgb, var(--primaire) 40%, transparent);
+  border-color: var(--primaire);
+}
+
+/* Saisie en MAJUSCULES (§ 6) */
+.maj {
+  text-transform: uppercase;
+}
+
+.maj::placeholder {
+  text-transform: none;
+}
+
+.obligatoire::after {
+  content: ' *';
+  color: var(--danger);
+}
+
+/* ─── Boutons ─── */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid var(--bord);
+  background: #fff;
+  color: var(--texte);
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--ciel-pale);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primaire {
+  background: var(--primaire);
+  border-color: var(--primaire);
+  color: #fff;
+}
+
+.btn-primaire:hover {
+  background: var(--primaire-fonce);
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+.btn-petit {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* ─── Tableaux ─── */
+.tableau-conteneur {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--bord);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgb(2 136 209 / 0.05);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--bord);
+  vertical-align: middle;
+}
+
+th {
+  background: #f3f9fd;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--gris);
+  white-space: nowrap;
+}
+
+tbody tr:hover {
+  background: #f3faff;
+}
+
+tr.cliquable {
+  cursor: pointer;
+}
+
+tr.inactif td {
+  color: var(--gris);
+  font-style: italic;
+}
+
+tfoot td {
+  font-weight: 700;
+  background: #f3f9fd;
+}
+
+.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ─── Divers ─── */
+.pastille {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #eceff1;
+  color: var(--gris);
+}
+
+.pastille.alerte {
+  background: #fff3e0;
+  color: var(--attention);
+}
+
+.pastille.danger {
+  background: #ffebee;
+  color: var(--danger);
+}
+
+.message-avertissement {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  color: #8d6e00;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+}
+
+/* =============================================================================
+   STYLES DE L'APPLICATION DE DISTRICT (module Paramétrage et suivants)
+   Mêmes classes que le district ; palette BLEU CIEL + BLANC.
+   ➜ Pour changer les couleurs, modifier seulement les variables ci-dessous.
+   ============================================================================= */
+:root {
+  /* Fond pâle et texte posé dessus (en-têtes de tableaux, encarts) */
+  --fond-pale: #eef7fd;
+  --fond-pale-fonce: #d6ecfa;
+  --texte-sur-fond: #0d3c61;
+
+  /* Couleur PRINCIPALE (bleu ciel) : boutons, liens, onglet actif */
+  --primary: #0288d1;
+  --primary-dark: #01579b;
+  --primary-light: #e1f5fe;
+
+  /* Couleur SECONDAIRE */
+  --accent: #4fc3f7;
+  --accent-dark: #0277bd;
+  --accent-light: #e1f5fe;
+  --bg: #f5fbff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #dcebf5;
+}
+
+/* Boutons « simples » (sans classe) : bleu plein, comme dans le district */
+button {
+  cursor: pointer;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.55rem 1rem;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+}
+button:hover {
+  background: var(--primary-dark);
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+input[type='checkbox'],
+input[type='radio'] {
+  width: auto;
+}
+.grille-formulaire input,
+.grille-formulaire select,
+.grille-formulaire textarea,
+.barre-outils input[type='search'] {
+  width: 100%;
+}
+.grille-formulaire label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+}
+.grille-formulaire .aide {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+/* Titres de section dans un formulaire (Identification, Vente, Stock…) */
+.grille-formulaire .section {
+  margin: 0.5rem 0 -0.25rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+}
+/* Formulaire sur 3 colonnes ; « double » = champ sur 2 colonnes */
+.grille-formulaire.trois-colonnes {
+  grid-template-columns: repeat(3, 1fr);
+}
+.grille-formulaire.trois-colonnes .double {
+  grid-column: span 2;
+}
+@media (max-width: 900px) {
+  .grille-formulaire.trois-colonnes {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .grille-formulaire.trois-colonnes {
+    grid-template-columns: 1fr;
+  }
+  .grille-formulaire.trois-colonnes .double {
+    grid-column: auto;
+  }
+}
+/* =============================================================================
+   ÉLÉMENTS COMMUNS À TOUS LES MODULES
+   (tableaux, boutons, formulaires, badges, barre d'outils)
+   ➜ Utiliser ces classes dans les écrans pour garder la même apparence partout.
+   ============================================================================= */
+
+/* --- Carte blanche avec ombre (bloc principal d'un écran) --- */
+.bloc {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* --- Barre d'outils : recherche à gauche, boutons à droite --- */
+.barre-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.barre-outils .recherche { flex: 1; min-width: 220px; max-width: 380px; }
+.barre-outils .espace { flex: 1; }
+.barre-outils select { width: auto; min-width: 180px; }
+
+/* --- Boutons --- */
+.bouton-secondaire {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+.bouton-secondaire:hover { background: #b3e5fc; }
+.bouton-danger { background: #fdecec; color: var(--danger); }
+.bouton-danger:hover { background: var(--danger); color: #fff; }
+.bouton-lien {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+}
+.bouton-lien:hover { background: var(--primary-light); }
+.bouton-lien.danger { color: var(--danger); }
+.bouton-lien.danger:hover { background: #fdecec; }
+
+/* --- Champs de saisie --- */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Formulaire sur 2 colonnes (1 colonne sur petit écran) */
+.grille-formulaire {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem 1rem;
+}
+.grille-formulaire .pleine-largeur { grid-column: 1 / -1; }
+.obligatoire::after { content: ' *'; color: var(--danger); }
+/* Petite mention « (facultatif) » à côté d'un libellé */
+.facultatif { font-size: 0.75rem; color: var(--muted); font-weight: 400; }
+.case-a-cocher { display: flex; align-items: center; gap: 0.5rem; color: var(--text); }
+.case-a-cocher input { width: auto; }
+@media (max-width: 640px) {
+  .grille-formulaire { grid-template-columns: 1fr; }
+}
+
+/* --- Tableaux --- */
+.tableau-conteneur { overflow-x: auto; }
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem; /* ≈ 14 px */
+}
+.tableau th {
+  text-align: left;
+  padding: 0.65rem 0.55rem;
+  background: var(--fond-pale);
+  color: var(--texte-sur-fond);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.tableau th:first-child { border-top-left-radius: 8px; }
+.tableau th:last-child { border-top-right-radius: 8px; }
+.tableau td {
+  padding: 0.65rem 0.55rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.tableau tbody tr:hover { background: #f5fbff; }
+.tableau .nombre { text-align: right; white-space: nowrap; }
+.tableau .actions { text-align: right; white-space: nowrap; }
+.tableau .ligne-inactive td { color: var(--muted); }
+.tableau-vide {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* --- Badges (petites étiquettes de statut) --- */
+.badge {
+  display: inline-block;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-vert { background: var(--primary-light); color: var(--primary-dark); }
+.badge-gris { background: #eef0f2; color: var(--muted); }
+.badge-rouge { background: #fdecec; color: var(--danger); }
+.badge-bleu { background: #e8f1fd; color: #1d4f91; }
+.badge-orange { background: #fff1e0; color: #b35c00; }
+
+/* Code (ex. MED-001) en police à chasse fixe */
+.code { font-family: var(--police-code); font-size: 0.85rem; color: var(--primary-dark); }
+
+/* =============================================================================
+   SWEETALERT2 : harmonisation avec les couleurs de l'application
+   (les fenêtres sont créées dans src/utils/alertes.js)
+   ============================================================================= */
+.swal2-popup {
+  font-family: var(--police);
+  border-radius: 16px;
+}
+.swal2-title { color: var(--texte-sur-fond); }
+.swal2-styled { border-radius: 8px !important; font-weight: 600 !important; }
+
+/* Notifications en haut à droite : liseré coloré à gauche + ombre */
+.swal2-popup.swal2-toast.notification-swal {
+  border-left: 5px solid var(--primary);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  padding: 0.75rem 1rem;
+}
+.swal2-popup.swal2-toast.notification-swal:has(.swal2-error) { border-left-color: var(--danger); }
+.swal2-popup.swal2-toast .swal2-title { font-size: 0.95rem; color: var(--text); }
+.swal2-timer-progress-bar { background: var(--primary-light); }
+/* Place les notifications sous la barre du haut de l'application */
+.swal2-container.swal2-top-end { top: 70px !important; }
+
+/* =============================================================================
+   LISTES DÉROULANTES AVEC RECHERCHE (composant src/components/ListeDeroulante.vue)
+   Les variables --ms-... sont celles de la librairie @vueform/multiselect.
+   ============================================================================= */
+:root {
+  --ms-font-size: 0.95rem;
+  --ms-line-height: 1.375;
+  --ms-py: 0.45rem;
+  --ms-px: 0.65rem;
+  --ms-radius: 6px;
+  --ms-border-color: var(--border);
+  --ms-border-color-active: var(--primary);
+  --ms-ring-width: 3px;
+  --ms-ring-color: var(--primary-light);
+  --ms-placeholder-color: #9ca3af;
+  --ms-dropdown-border-color: var(--border);
+  --ms-dropdown-radius: 8px;
+  --ms-option-bg-pointed: var(--primary-light);
+  --ms-option-color-pointed: var(--primary-dark);
+  --ms-option-bg-selected: var(--primary);
+  --ms-option-bg-selected-pointed: var(--primary-dark);
+  --ms-empty-color: var(--muted);
+  --ms-max-height: 16rem;
+}
+/* La liste s'ouvre au-dessus des fenêtres de formulaire */
+.multiselect-dropdown {
+  z-index: 1000;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+.multiselect.is-active { border-color: var(--primary); }
+.multiselect-search { font: inherit; }
+/* Largeur des listes utilisées comme filtres dans les barres d'outils */
+.barre-outils .filtre { min-width: 230px; }
+
+
+/* Tableau placé dans un bloc blanc : pas de second encadré */
+.bloc .tableau-conteneur {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Conflits avec les styles du lot 1 (label en colonne, .actions en flex) */
+.case-a-cocher {
+  flex-direction: row;
+  font-weight: 500;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.tableau td.actions,
+.tableau th.actions {
+  display: table-cell;
+}
+.tableau .code {
+  white-space: nowrap;
+}
+
+/* Champs non modifiables : fond gris clair, pour les distinguer des champs de saisie */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #f1f5f9;
+  color: #607d8b;
+  cursor: not-allowed;
+}
+
+/* Champ date / nombre avec son libellé sur la même ligne, dans une barre d'outils */
+.barre-outils .champ-date {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.barre-outils .champ-date input {
+  width: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TÉLÉPHONE (§ 17 « Application mobile ») : mêmes écrans, mise en page compacte
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Onglets en pilules sur une seule ligne qui défile */
+  .onglets {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+  }
+  .onglets::-webkit-scrollbar {
+    display: none;
+  }
+  .onglet {
+    flex-shrink: 0;
+    padding: 0.45rem 0.8rem !important;
+    font-size: 0.88rem;
+  }
+  /* Blocs blancs moins espacés */
+  .bloc {
+    padding: 0.9rem !important;
+    border-radius: 14px;
+  }
+  /* Barre d'outils : recherche et listes sur toute la largeur */
+  .barre-outils .recherche,
+  .barre-outils .filtre {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  .barre-outils .espace {
+    display: none;
+  }
+  /* Tableaux : défilement horizontal dans leur cadre, jamais de la page */
+  .tableau-conteneur {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tableau {
+    font-size: 0.85rem;
+  }
+  /* Formulaires sur une seule colonne */
+  .grille-formulaire {
+    grid-template-columns: 1fr !important;
+  }
+  .grille-formulaire > * {
+    grid-column: auto !important;
+  }
+}
