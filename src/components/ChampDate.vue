@@ -163,9 +163,11 @@ watch(isoPropre, (v) => (texte.value = versTexte(v)))
 const desactive = computed(() => attrs.disabled !== undefined && attrs.disabled !== false)
 
 // ─── Limites min / max ───
-const horsLimites = (iso) => (props.min && iso < props.min.slice(0, 10)) || (props.max && iso > props.max.slice(0, 10))
-const anneeHorsLimites = (a) => (props.min && `${a}-12-31` < props.min.slice(0, 10)) || (props.max && `${a}-01-01` > props.max.slice(0, 10))
-const moisHorsLimites = (a, m) => (props.min && isoDe(a, m, new Date(a, m + 1, 0).getDate()) < props.min.slice(0, 10)) || (props.max && isoDe(a, m, 1) > props.max.slice(0, 10))
+// Toujours un VRAI booléen : sans min / max, « props.min && … » vaudrait '' et
+// Vue traite :disabled="''" comme désactivé (tout le calendrier serait grisé).
+const horsLimites = (iso) => !!((props.min && iso < props.min.slice(0, 10)) || (props.max && iso > props.max.slice(0, 10)))
+const anneeHorsLimites = (a) => !!((props.min && `${a}-12-31` < props.min.slice(0, 10)) || (props.max && `${a}-01-01` > props.max.slice(0, 10)))
+const moisHorsLimites = (a, m) => !!((props.min && isoDe(a, m, new Date(a, m + 1, 0).getDate()) < props.min.slice(0, 10)) || (props.max && isoDe(a, m, 1) > props.max.slice(0, 10)))
 
 // ─── Vue affichée dans le calendrier ───
 const anneeVue = ref(new Date().getFullYear())

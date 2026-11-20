@@ -4,7 +4,7 @@
   =============================================================================
   Chaque onglet est un composant séparé, dans ce même dossier :
     - OngletFournisseurs.vue  fournisseurs (§ 8)
-    - OngletReferentiel.vue   familles, formes, unités de vente, fonctions (listes code + libellé)
+    - OngletReferentiel.vue   familles, formes, unités de comptage, fonctions (listes code + libellé)
   Le catalogue des médicaments et les prix sont dans le module « Produits et médicaments ».
     - OngletUtilisateurs.vue  comptes utilisateurs et rôles (§ 5) — administrateur
     - OngletParametres.vue    fiche de la pharmacie et réglages (§ 13.2) — administrateur
@@ -19,7 +19,7 @@
     <EnteteModule
       icone="reglages"
       titre="Paramétrage"
-      description="Données de référence utilisées par tous les modules : fournisseurs, familles, formes, unités de vente, utilisateurs et réglages."
+      description="Données de référence utilisées par tous les modules : fournisseurs, familles, formes, unités de comptage, utilisateurs et réglages."
     />
 
     <nav class="onglets">
@@ -65,7 +65,7 @@ const ONGLETS = [
   { code: 'fournisseurs', titre: 'Fournisseurs', icone: 'camion' },
   { code: 'familles', titre: 'Familles de médicaments', icone: 'presse-papier' },
   { code: 'formes', titre: 'Formes de médicaments', icone: 'gelule' },
-  { code: 'unites-vente', titre: 'Unités de vente', icone: 'carton' },
+  { code: 'unites-vente', titre: 'Unités de comptage', icone: 'carton' },
   { code: 'fonctions', titre: 'Fonctions', icone: 'utilisateurs' },
   { code: 'utilisateurs', titre: 'Utilisateurs', icone: 'cle', admin: true },
   { code: 'parametres', titre: 'Paramètres généraux', icone: 'reglages', admin: true },
@@ -108,17 +108,17 @@ const LISTES_SIMPLES = {
   'unites-vente': {
     liste: 'unitesVente',
     compte: 'produits',
-    titre: 'Unités de vente',
-    fichier: 'unites_vente',
+    titre: 'Unités de comptage',
+    fichier: 'unites_comptage',
     recherche: 'Rechercher une unité…',
     boutonNouveau: '+ Nouvelle unité',
-    titreNouveau: 'Nouvelle unité de vente',
-    titreModifier: "Modifier l'unité de vente",
+    titreNouveau: 'Nouvelle unité de comptage',
+    titreModifier: "Modifier l'unité de comptage",
     colonneCompte: 'Médicaments',
     messageUtilise: 'Unité utilisée par des médicaments',
     exempleCode: 'FLACON',
     exempleLibelle: 'Flacon',
-    nomElement: 'Unité de vente',
+    nomElement: 'Unité de comptage',
   },
   fonctions: {
     liste: 'fonctions',
@@ -162,7 +162,7 @@ const titresNombres = {
   fournisseurs: 'Nombre de fournisseurs (actifs et inactifs)',
   familles: 'Nombre de familles',
   formes: 'Nombre de formes',
-  'unites-vente': "Nombre d'unités de vente",
+  'unites-vente': "Nombre d'unités de comptage",
   fonctions: 'Nombre de fonctions du personnel',
   utilisateurs: 'Nombre de comptes (actifs et inactifs)',
 }

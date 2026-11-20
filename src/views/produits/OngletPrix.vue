@@ -4,10 +4,10 @@
   =============================================================================
   Même présentation que le district, DEUX VUES :
 
-  Comme le district : UN SEUL prix de vente, par unité de vente (boîte, flacon…).
+  Comme le district : UN SEUL prix de vente, par unité de comptage (boîte, flacon…).
 
   A. VUE D'ENSEMBLE : tous les médicaments avec prix de vente, dernier prix
-     d'achat et marge (par unité de vente). Filtres : recherche, famille,
+     d'achat et marge (par unité de comptage). Filtres : recherche, famille,
      état des prix, inactifs. Bouton « Historique / modifier » -> vue B.
 
   B. DÉTAIL D'UN MÉDICAMENT :
@@ -62,7 +62,7 @@
               <ColonneTri v-model="tri" cle="code">Code</ColonneTri>
               <ColonneTri v-model="tri" cle="designation">Désignation</ColonneTri>
               <ColonneTri v-model="tri" cle="famille">Famille</ColonneTri>
-              <ColonneTri v-model="tri" cle="uniteVente">Unité de vente</ColonneTri>
+              <ColonneTri v-model="tri" cle="uniteVente">Unité de comptage</ColonneTri>
               <ColonneTri v-model="tri" cle="prixVente" class="nombre">Prix de vente</ColonneTri>
               <ColonneTri v-model="tri" cle="prixAchat" class="nombre">Prix d'achat</ColonneTri>
               <ColonneTri v-model="tri" cle="marge" class="nombre">Marge</ColonneTri>
@@ -292,12 +292,12 @@ const medicaments = computed(() => store.state.referentiel.medicaments)
 const familles = computed(() => store.state.referentiel.familles)
 const medicamentsActifs = computed(() => medicaments.value.filter((m) => m.actif))
 
-/** Un médicament ancien vendu à la plaque seule garde la plaque comme unité de vente. */
+/** Un médicament ancien vendu à la plaque seule garde la plaque comme unité de comptage. */
 const alaPlaque = (m) => !!m && !m.venteBoite && m.ventePlaque
 const uniteVente = (m) => (alaPlaque(m) ? 'PLAQUE' : m?.uniteVente?.libelle ?? 'BOÎTE')
-/** Prix de vente d'une unité de vente (un seul prix, comme le district). */
+/** Prix de vente d'une unité de comptage (un seul prix, comme le district). */
 const prixVente = (m) => Number(alaPlaque(m) ? m.prixVentePlaque : m.prixVenteBoite)
-/** Prix d'achat d'une unité de vente (le stock est tenu en plaques). */
+/** Prix d'achat d'une unité de comptage (le stock est tenu en plaques). */
 const prixAchat = (m) => Number(m.prixAchatPlaque ?? 0) * (alaPlaque(m) ? 1 : m.plaquesParBoite || 1)
 /** Montants envoyés à l'API pour un prix unique. */
 const montants = (m, prix) =>
@@ -306,7 +306,7 @@ const montants = (m, prix) =>
 const sansVente = (m) => !m.consommable && prixVente(m) === 0
 const sansAchat = (m) => Number(m.prixAchatPlaque ?? 0) === 0
 
-/** Marge par unité de vente = prix de vente − prix d'achat. */
+/** Marge par unité de comptage = prix de vente − prix d'achat. */
 function marge(m) {
   if (m.consommable || sansVente(m) || sansAchat(m)) return null
   return Math.round((prixVente(m) - prixAchat(m)) * 100) / 100

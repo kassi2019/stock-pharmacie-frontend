@@ -7,11 +7,11 @@
   - Liste avec recherche, filtres famille / forme, compteurs par état du stock
     (un clic filtre) et option « afficher les inactifs » ; le médecin ne voit
     ni stock ni prix (§ 6) ;
-  - Affiche le seuil d'alerte, le prix de vente (par unité de vente), le prix
+  - Affiche le seuil d'alerte, le prix de vente (par unité de comptage), le prix
     d'achat (dernier lot reçu), le stock et l'état de couleur (§ 13) ;
   - Le formulaire contient :
       * Identification : code, famille, forme, désignation, dosage ;
-      * Vente : UNITÉ DE VENTE (boîte, flacon…), PRIX DE VENTE de cette unité
+      * Vente : UNITÉ DE COMPTAGE (boîte, flacon…), PRIX DE VENTE de cette unité
         (enregistré dans l'historique des prix à la date du jour s'il change),
         CONSOMMABLE (vendu à 0 F mais décompté du stock) ;
       * Stock : SEUIL D'ALERTE (en dessous : « Sous stock ») et, à la création,
@@ -165,7 +165,7 @@
         <!-- ---------- Vente ---------- -->
         <h4 class="section pleine-largeur">Vente</h4>
         <div>
-          <label class="obligatoire">Unité de vente</label>
+          <label class="obligatoire">Unité de comptage</label>
           <ListeDeroulante v-model="formulaire.uniteVenteId" :options="unitesVente" :effacable="false" placeholder="BOÎTE" />
           <small class="aide">Le prix de vente s'applique à cette unité.</small>
         </div>
@@ -283,17 +283,17 @@ const formes = computed(() => store.state.referentiel.formes)
 const familles = computed(() => store.state.referentiel.familles)
 const unitesVente = computed(() => store.state.referentiel.unitesVente)
 
-/** Libellé de l'unité de vente d'un médicament (BOÎTE par défaut). */
+/** Libellé de l'unité de comptage d'un médicament (BOÎTE par défaut). */
 const uniteVente = (m) => (m && !m.venteBoite && m.ventePlaque ? 'PLAQUE' : m?.uniteVente?.libelle ?? 'BOÎTE')
 const libelleUniteFormulaire = computed(
   () => unitesVente.value.find((u) => u.id === formulaire.value?.uniteVenteId)?.libelle ?? 'BOÎTE',
 )
 
-/** Prix de vente d'une unité de vente (ancien produit vendu à la plaque seule : prix plaque). */
+/** Prix de vente d'une unité de comptage (ancien produit vendu à la plaque seule : prix plaque). */
 const prixVente = (m) => Number(m.venteBoite ? m.prixVenteBoite : m.prixVentePlaque)
-/** Prix d'achat d'une unité de vente (le stock est tenu en plaques). */
+/** Prix d'achat d'une unité de comptage (le stock est tenu en plaques). */
 const prixAchat = (m) => Number(m.prixAchatPlaque ?? 0) * (m.plaquesParBoite || 1)
-/** Stock sous le seuil d'alerte (seuil en unités de vente, stock en plaques). */
+/** Stock sous le seuil d'alerte (seuil en unités de comptage, stock en plaques). */
 const sousLeSeuil = (m) => m.seuilAlerte > 0 && (m.stockDisponible ?? 0) <= m.seuilAlerte * (m.plaquesParBoite || 1)
 
 const medicamentsAffiches = computed(() => {
@@ -350,7 +350,7 @@ function ouvrirFormulaire(med = null) {
         dosage: '',
         familleId: null,
         seuilAlerte: 0,
-        // Boîte par défaut (si elle existe dans les unités de vente)
+        // Boîte par défaut (si elle existe dans les unités de comptage)
         uniteVenteId: unitesVente.value.find((u) => u.code === 'BOITE')?.id ?? null,
         prixVente: '',
         consommable: 'NON',
@@ -377,7 +377,7 @@ async function enregistrer() {
         seuilAlerte: Math.max(0, Math.round(Number(f.seuilAlerte) || 0)),
         uniteVenteId: f.uniteVenteId ?? null,
         consommable: f.consommable === 'OUI',
-        // Un seul prix de vente, par unité de vente (comme le district)
+        // Un seul prix de vente, par unité de comptage (comme le district)
         venteBoite: true,
         ventePlaque: false,
         prixVenteBoite: prix,
@@ -447,7 +447,7 @@ const COLONNES_PDF = [
   { titre: 'Forme / dosage', valeur: (m) => [m.forme?.libelle, m.dosage].filter(Boolean).join(' · ') },
   { titre: 'Famille', valeur: (m) => m.famille?.libelle },
   { titre: 'Seuil', valeur: (m) => m.seuilAlerte || '', droite: true },
-  { titre: 'Unité de vente', valeur: (m) => uniteVente(m) },
+  { titre: 'Unité de comptage', valeur: (m) => uniteVente(m) },
   { titre: 'Prix de vente', valeur: (m) => montant(prixVente(m)), droite: true, somme: prixVente, formatTotal: montant },
   { titre: "Prix d'achat", valeur: (m) => montant(prixAchat(m)), droite: true, somme: prixAchat, formatTotal: montant },
   { titre: 'Stock', valeur: (m) => quantite(m.stockDisponible ?? 0, m.plaquesParBoite), droite: true },
@@ -465,12 +465,12 @@ const COLONNES_IMPORT = [
   { cle: 'designation', titre: 'Désignation', obligatoire: true, exemple: 'PARACÉTAMOL 500 MG' },
   { cle: 'dosage', titre: 'Dosage', exemple: '500 MG' },
   // --- Vente ---
-  { cle: 'uniteVente', titre: 'Unité de vente', exemple: 'BOÎTE', aide: "Boîte, flacon, tube… (ajoutée si elle n'existe pas). BOÎTE si vide. Le prix de vente s'applique à cette unité" },
-  { cle: 'prixVente', titre: 'Prix de vente', exemple: 500, aide: "En FCFA, par unité de vente. S'il change, un nouveau prix est créé à la date du jour" },
-  { cle: 'prixAchat', titre: "Prix d'achat", exemple: 350, aide: "En FCFA, par unité de vente : prix du stock initial" },
+  { cle: 'uniteVente', titre: 'Unité de comptage', exemple: 'BOÎTE', aide: "Boîte, flacon, tube… (ajoutée si elle n'existe pas). BOÎTE si vide. Le prix de vente s'applique à cette unité" },
+  { cle: 'prixVente', titre: 'Prix de vente', exemple: 500, aide: "En FCFA, par unité de comptage. S'il change, un nouveau prix est créé à la date du jour" },
+  { cle: 'prixAchat', titre: "Prix d'achat", exemple: 350, aide: "En FCFA, par unité de comptage : prix du stock initial" },
   { cle: 'consommable', titre: 'Consommable', exemple: 'Non', aide: 'Oui ou Non (gants, seringues… : vendu à 0 F mais décompté du stock). Non si vide' },
   // --- Stock ---
-  { cle: 'seuilAlerte', titre: "Seuil d'alerte", exemple: 50, aide: "Stock minimum (par unité de vente) : en dessous, « Sous stock ». Vide = inchangé (0 pour un nouveau médicament)" },
+  { cle: 'seuilAlerte', titre: "Seuil d'alerte", exemple: 50, aide: "Stock minimum (par unité de comptage) : en dessous, « Sous stock ». Vide = inchangé (0 pour un nouveau médicament)" },
   // --- Stock initial (seulement pour un NOUVEAU médicament) ---
   { cle: 'stockInitial', titre: 'Stock initial', exemple: 200, aide: 'Seulement pour un nouveau médicament (ignoré si le code existe déjà)' },
   { cle: 'numeroLot', titre: 'N° de lot', exemple: 'LOT2026-01', aide: 'Obligatoire si un stock initial est indiqué' },
@@ -495,7 +495,7 @@ async function importerLigne(valeurs) {
     uniteVente: enTexte(valeurs.uniteVente),
     consommable: enOuiNon(valeurs.consommable),
     seuilAlerte: seuil === null ? null : Math.round(seuil),
-    // Un seul prix de vente, par unité de vente
+    // Un seul prix de vente, par unité de comptage
     ...(prix === null ? {} : { venteBoite: true, ventePlaque: false, prixVenteBoite: prix, prixVentePlaque: 0 }),
   })
 

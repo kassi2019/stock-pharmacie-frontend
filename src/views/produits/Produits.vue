@@ -9,7 +9,7 @@
       et prix d'achat (repris des réceptions). Masqué pour le médecin (§ 6).
   Le bouton « Prix » d'une ligne du catalogue ouvre l'onglet Prix sur ce médicament.
   L'onglet affiché est écrit dans l'adresse (ex. /produits?onglet=prix&medicament=12).
-  Les listes de référence (familles, formes, unités de vente) restent dans le Paramétrage.
+  Les listes de référence (familles, formes, unités de comptage) restent dans le Paramétrage.
   =============================================================================
 -->
 <template>

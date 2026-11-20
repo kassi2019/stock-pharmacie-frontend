@@ -29,19 +29,9 @@ const pagesModules = [
     meta: { roles: roles('parametres'), module: 'parametres', titre: 'Historique fournisseur' },
   },
   { path: 'receptions', name: 'receptions', component: () => import('../views/receptions/Receptions.vue') },
-  {
-    path: 'receptions/nouvelle',
-    name: 'reception-nouvelle',
-    component: () => import('../views/receptions/ReceptionNouvelle.vue'),
-    meta: { roles: GESTION, module: 'receptions', titre: 'Nouvelle réception' },
-  },
-  {
-    path: 'receptions/:id',
-    name: 'reception',
-    component: () => import('../views/receptions/ReceptionFiche.vue'),
-    props: true,
-    meta: { roles: roles('receptions'), module: 'receptions', titre: 'Fiche réception' },
-  },
+  // Saisie et consultation dans la fenêtre de la liste (comme le district)
+  { path: 'receptions/nouvelle', name: 'reception-nouvelle', redirect: { name: 'receptions', query: { nouvelle: 1 } } },
+  { path: 'receptions/:id', name: 'reception', redirect: (to) => ({ name: 'receptions', query: { voir: to.params.id } }) },
   // ---------- Lot 2 : sorties de stock ----------
   { path: 'dispensation', name: 'dispensation', component: () => import('../views/dispensation/Dispensations.vue') },
   {

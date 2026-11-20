@@ -1,7 +1,7 @@
 <!--
   =============================================================================
   ONGLET « LISTE DE RÉFÉRENCE » (code + libellé) — même fonctionnement que les
-  onglets Formes, Familles, Unités de vente et Fonctions du district
+  onglets Formes, Familles, Unités de comptage et Fonctions du district
   =============================================================================
   Un seul écran pour ces 4 listes : ParametrageView.vue lui passe la configuration
   (voir LISTES_SIMPLES). Une ligne peut être supprimée seulement si elle n'est

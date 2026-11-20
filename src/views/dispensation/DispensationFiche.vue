@@ -10,15 +10,9 @@
 -->
 <template>
   <div v-if="d" class="page">
-    <EnteteModule icone="sortie" :titre="`Dispensation ${d.numero}`" :description="`${d.patient} — ${dateHeure(d.date)}`">
+    <EnteteModule icone="sortie" :titre="`Dispensation ${d.numero}`" :description="[d.patient, dateHeure(d.date)].filter(Boolean).join(' — ')">
       <template #actions>
-        <ImportExportTableau
-          :titre="`Dispensation ${d.numero}`"
-          :sous-titre="sousTitre"
-          :nom-fichier="d.numero"
-          :colonnes-pdf="COLONNES_PDF"
-          :lignes="d.lignes"
-        />
+        <button v-si-imprimer class="bouton-secondaire" :disabled="impression" @click="imprimer">Fiche de dispensation PDF</button>
       </template>
     </EnteteModule>
 
@@ -29,9 +23,13 @@
 
     <section class="bloc">
       <div class="infos">
-        <span><small>Patient</small><strong>{{ d.patient }}</strong></span>
-        <span><small>N° de passage</small><strong>{{ d.numeroPassage || '—' }}</strong></span>
-        <span><small>Prescripteur</small><strong>{{ d.prescripteur || '—' }}</strong></span>
+        <!-- Patient : seulement pour les anciennes dispensations (le formulaire ne le demande plus) -->
+        <template v-if="d.patient">
+          <span><small>Patient</small><strong>{{ d.patient }}</strong></span>
+          <span><small>N° de passage</small><strong>{{ d.numeroPassage || '—' }}</strong></span>
+          <span><small>Prescripteur</small><strong>{{ d.prescripteur || '—' }}</strong></span>
+        </template>
+        <span><small>Date</small><strong>{{ dateHeure(d.date) }}</strong></span>
         <span><small>Agent</small><strong>{{ d.utilisateur.nom }}</strong></span>
         <span>
           <small>Statut</small>
@@ -118,10 +116,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import EnteteModule from '@/components/EnteteModule.vue'
-import ImportExportTableau from '@/components/ImportExportTableau.vue'
 import { GESTION_STOCK } from '@/utils/roles'
 import { confirmer, demanderTexte } from '@/utils/alertes'
 import { date, dateHeure, montant } from '@/utils/format'
+import { ficheDispensationPdf, uniteLigne as unite } from './dispensationCommun'
 
 const props = defineProps({ id: { type: [String, Number], required: true } })
 const store = useStore()
@@ -129,22 +127,19 @@ const router = useRouter()
 
 const d = ref(null)
 const peutAnnuler = computed(() => store.getters['auth/peut'](GESTION_STOCK))
-const unite = (l) => (l.unite === 'PLAQUE' ? 'PLAQUE' : l.produit.uniteVente?.libelle ?? 'BOÎTE')
-const sousTitre = computed(() =>
-  d.value
-    ? [`Patient : ${d.value.patient}`, d.value.numeroPassage && `N° de passage : ${d.value.numeroPassage}`, dateHeure(d.value.date)]
-        .filter(Boolean)
-        .join(' — ')
-    : '',
-)
+const impression = ref(false)
 
-const COLONNES_PDF = [
-  { titre: 'Code', valeur: (l) => l.produit.code },
-  { titre: 'Médicament', valeur: (l) => l.produit.designation },
-  { titre: 'Quantité', valeur: (l) => `${l.quantite} ${unite(l).toLowerCase()}`, droite: true },
-  { titre: 'Prix unitaire', valeur: (l) => montant(l.prixUnitaire), droite: true },
-  { titre: 'Montant', valeur: (l) => montant(l.montant), droite: true, somme: (l) => Number(l.montant), formatTotal: montant },
-]
+/** Fiche de dispensation en PDF (même présentation que les documents du district). */
+async function imprimer() {
+  impression.value = true
+  try {
+    await ficheDispensationPdf(d.value)
+  } catch (e) {
+    store.dispatch('notifications/erreurApi', e)
+  } finally {
+    impression.value = false
+  }
+}
 
 async function charger() {
   try {
