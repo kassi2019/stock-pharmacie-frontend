@@ -15,6 +15,7 @@ import MonMotDePasse from './MonMotDePasse.vue'
 import { moduleParRoute } from '../utils/modules'
 import { utiliserDeconnexionAuto } from '../utils/deconnexionAuto'
 import { utiliserActualisation } from '../utils/actualisation'
+import { retour } from '../utils/retour'
 
 const store = useStore()
 const router = useRouter()
@@ -108,6 +109,10 @@ function deconnexion() {
           </router-link>
         </div>
 
+        <button v-if="!surAccueil" type="button" class="bouton-accueil bouton-retour" title="Revenir à la page précédente" @click="retour">
+          <span class="fleche-retour">←</span>
+          <span>Retour</span>
+        </button>
         <router-link v-if="!surAccueil" :to="{ name: 'accueil' }" class="bouton-accueil">
           <Icone nom="accueil" :taille="18" />
           <span>Accueil</span>
@@ -438,6 +443,21 @@ function deconnexion() {
   }
   .contenu {
     padding: 1.25rem 1rem;
+  }
+}
+/* Bouton « ← Retour » : gardé partout (sur téléphone : la flèche seule, sans « Accueil ») */
+.bouton-retour { cursor: pointer; border: none; }
+.fleche-retour { font-size: 1.05rem; line-height: 1; }
+@media (max-width: 900px) {
+  .bouton-retour .fleche-retour { display: inline; }
+}
+@media (max-width: 600px) {
+  .bouton-accueil.bouton-retour {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    justify-content: center;
+    padding: 0;
   }
 }
 </style>

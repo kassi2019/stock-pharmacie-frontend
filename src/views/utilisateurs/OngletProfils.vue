@@ -221,7 +221,7 @@ const store = useStore()
 const COLONNES = ['VOIR', 'IMPRIMER', 'MODIFIER', 'VALIDER']
 const ICONES = { VOIR: '👁', IMPRIMER: '🖨', MODIFIER: '✎', VALIDER: '✔' }
 
-const MODULES_DISPONIBLES = MODULES.filter((m) => m.disponible)
+const MODULES_DISPONIBLES = MODULES.filter((m) => m.disponible && !m.droitsDe)
 const GROUPES = [
   { titre: 'Modules', modules: MODULES_DISPONIBLES },
   { titre: 'Données sensibles', modules: DROITS_DONNEES },

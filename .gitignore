@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .env
+
+# Certificat HTTPS de la pharmacie (clé privée : ne jamais publier)
+certificats/
+public/pharmastock-ca.crt

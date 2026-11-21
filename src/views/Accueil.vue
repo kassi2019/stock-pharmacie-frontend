@@ -31,7 +31,7 @@ const dateDuJour = new Date().toLocaleDateString('fr-FR', {
 
 /** Tous les modules ; « autorise » = le profil connecté y a accès (sinon tuile grisée). */
 const tousLesModules = computed(() =>
-  MODULES.filter((m) => m.tuile !== false).map((m) => ({
+  MODULES.filter((m) => m.tuile !== false && (!m.mobileSeulement || estMobile.value)).map((m) => ({
     ...m,
     autorise: [m.route, ...(m.accesAussi ?? [])].some((code) => store.getters['auth/peutVoir'](code)),
   })),

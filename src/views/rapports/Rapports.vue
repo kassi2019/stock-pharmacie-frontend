@@ -2,14 +2,20 @@
   =============================================================================
   MODULE — RAPPORTS ET POINTS FINANCIERS (§ 15)
   =============================================================================
-  Onglets (adresse : /rapports?onglet=point | etat | autres) :
+  Onglets (adresse : /rapports?onglet=point | etat | paie | personnel | autres) :
    - Point financier d'une période : stock initial, entrées, ventes (chiffre
      d'affaires, coût d'achat, marge), pertes, correctifs d'inventaire, stock
      final, avec contrôle de cohérence. CHAQUE MONTANT OUVRE LE DÉTAIL de ses
      lignes, exportable en Excel et en PDF avec l'en-tête de la pharmacie ;
    - État du stock à une date, par produit ou par lot, avec l'état de couleur
      (recalculé à cette date) et la valeur ;
+   - Paie (RapportPaie.vue, droit VOIR sur la paie) : masse salariale par mois,
+     livre de paie par agent, primes et retenues, paiements par mode ;
+   - Personnel (RapportPersonnel.vue, droit VOIR sur les Utilisateurs) : liste avec
+     ancienneté, effectif par fonction, comptes par profil, embauches ;
    - Autres rapports : retraits, péremptions, stock bas, mouvements, inventaires.
+  Point financier : avec le droit paie, les SALAIRES PAYÉS sur la période et le
+  résultat (marge − salaires) sont ajoutés.
   Montants au prix d'achat, sauf le chiffre d'affaires (prix de vente).
   =============================================================================
 -->
@@ -18,7 +24,7 @@
     <EnteteModule icone="graphique" titre="Rapports et points financiers" description="Valorisation du stock et points financiers — exports Excel et PDF avec l'en-tête de la pharmacie." />
 
     <nav class="onglets">
-      <button v-for="o in ONGLETS" :key="o.code" class="onglet" :class="{ actif: onglet === o.code }" @click="onglet = o.code">
+      <button v-for="o in ongletsVisibles" :key="o.code" class="onglet" :class="{ actif: onglet === o.code }" @click="onglet = o.code">
         <Icone :nom="o.icone" :taille="18" /> {{ o.titre }}
       </button>
     </nav>
@@ -66,6 +72,14 @@
               <small>= Stock restant au {{ date(point.au) }}</small>
               <strong>{{ montant(point.stockFinal) }}</strong>
             </button>
+          </div>
+
+          <!-- Charges de personnel (droit VOIR sur la paie) -->
+          <div v-if="salairesPeriode" class="resultat-periode">
+            <span>Marge sur les ventes <strong>{{ montant(point.ventes.marge) }}</strong></span>
+            <span>− Salaires payés <strong>{{ montant(salairesPeriode.montant) }}</strong>
+              <small>({{ salairesPeriode.nombre }} bulletin(s) payé(s) sur la période)</small></span>
+            <span class="resultat" :class="{ negatif: resultatPeriode < 0 }">= Résultat <strong>{{ montant(resultatPeriode) }}</strong></span>
           </div>
 
           <div class="controle" :class="{ ok: !point.controle.ecart }">
@@ -191,6 +205,10 @@
       </p>
     </section>
 
+    <!-- ======================== PAIE ET PERSONNEL ======================== -->
+    <RapportPaie v-else-if="onglet === 'paie'" />
+    <RapportPersonnel v-else-if="onglet === 'personnel'" />
+
     <!-- ======================== AUTRES RAPPORTS ======================== -->
     <section v-else class="autres">
       <router-link v-for="r in AUTRES" :key="r.titre" :to="r.lien" class="carte-rapport">
@@ -216,6 +234,9 @@ import Pagination from '@/components/Pagination.vue'
 import ColonneTri from '@/components/ColonneTri.vue'
 import EtatBadge from '@/components/EtatBadge.vue'
 import Icone from '@/components/Icone.vue'
+import RapportPaie from './RapportPaie.vue'
+import RapportPersonnel from './RapportPersonnel.vue'
+import { listerBulletins } from '@/api/paie'
 import { utiliserTableau } from '@/utils/pagination'
 import { ETATS } from '@/utils/etats'
 import { aujourdhui, date, dateHeure, montant, nombre, quantite } from '@/utils/format'
@@ -224,12 +245,16 @@ const store = useStore()
 const route = useRoute()
 const router = useRouter()
 
+/** « module » : onglet visible seulement avec le droit VOIR sur ce module. */
 const ONGLETS = [
   { code: 'point', titre: 'Point financier', icone: 'portefeuille' },
   { code: 'etat', titre: 'État du stock à date', icone: 'carton' },
+  { code: 'paie', titre: 'Paie', icone: 'facture', module: 'paie' },
+  { code: 'personnel', titre: 'Personnel', icone: 'utilisateurs', module: 'utilisateurs' },
   { code: 'autres', titre: 'Autres rapports', icone: 'liste' },
 ]
-const onglet = ref(ONGLETS.some((o) => o.code === route.query.onglet) ? route.query.onglet : 'point')
+const ongletsVisibles = computed(() => ONGLETS.filter((o) => !o.module || store.getters['auth/peutVoir'](o.module)))
+const onglet = ref(ongletsVisibles.value.some((o) => o.code === route.query.onglet) ? route.query.onglet : 'point')
 watch(onglet, (code) => {
   router.replace({ query: { onglet: code } })
   if (code === 'etat' && !etat.value) chargerEtat()
@@ -266,6 +291,7 @@ async function chargerPoint() {
   chargement.value = true
   try {
     point.value = (await api.get('/rapports/point-financier', { params: periode.value })).data
+    await chargerSalairesPeriode()
     if (detail.value?.startsWith('stock')) await chargerStocksPoint()
   } catch (e) {
     store.dispatch('notifications/erreurApi', e)
@@ -273,6 +299,27 @@ async function chargerPoint() {
     chargement.value = false
   }
 }
+
+/**
+ * Salaires PAYÉS sur la période (date de paiement entre « du » et « au »), avec le
+ * droit VOIR sur la paie ; résultat = marge sur les ventes − salaires payés.
+ */
+const salairesPeriode = ref(null)
+async function chargerSalairesPeriode() {
+  if (!store.getters['auth/peutVoir']('paie')) return (salairesPeriode.value = null)
+  try {
+    const { du, au } = periode.value
+    // Bulletins des années couvertes par la période
+    const annees = []
+    for (let a = Number(du.slice(0, 4)); a <= Number(au.slice(0, 4)); a++) annees.push(a)
+    const listes = await Promise.all(annees.map((annee) => listerBulletins({ annee })))
+    const payes = listes.flat().filter((b) => b.statut === 'PAYE' && b.datePaiement && b.datePaiement.slice(0, 10) >= du && b.datePaiement.slice(0, 10) <= au)
+    salairesPeriode.value = { nombre: payes.length, montant: payes.reduce((s, b) => s + Number(b.netAPayer), 0) }
+  } catch {
+    salairesPeriode.value = null
+  }
+}
+const resultatPeriode = computed(() => (point.value?.ventes.marge ?? 0) - (salairesPeriode.value?.montant ?? 0))
 
 /** Détail du stock initial / final : état du stock à la veille du début / à la fin. */
 const stocksPoint = ref({ initial: [], final: [] })
@@ -404,6 +451,12 @@ const synthese = computed(() =>
         { poste: `Stock restant au ${date(point.value.au)}`, valeur: point.value.stockFinal },
         { poste: "Chiffre d'affaires des ventes (prix de vente)", valeur: point.value.ventes.chiffreAffaires },
         { poste: 'Marge sur les ventes', valeur: point.value.ventes.marge },
+        ...(salairesPeriode.value
+          ? [
+              { poste: 'Salaires payés sur la période', valeur: -salairesPeriode.value.montant },
+              { poste: 'Résultat (marge − salaires)', valeur: resultatPeriode.value },
+            ]
+          : []),
       ]
     : [],
 )
@@ -710,4 +763,18 @@ else if (onglet.value === 'point') chargerPoint()
   background: var(--primary-light);
   color: var(--primary-dark);
 }
+.resultat-periode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+  margin-top: 0.9rem;
+  padding: 0.8rem 1.1rem;
+  border-radius: 12px;
+  background: var(--fond-pale);
+  font-size: 0.92rem;
+}
+.resultat-periode small { color: var(--muted); }
+.resultat-periode .resultat { margin-left: auto; font-size: 1.05rem; color: #15803d; }
+.resultat-periode .resultat.negatif { color: var(--danger); }
 </style>

@@ -68,6 +68,7 @@ const DESSINS = {
   coche: '<circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/>',
   gelule: '<path d="M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7z"/><path d="M8.5 8.5l7 7"/>',
   // Icônes propres à la pharmacie
+  'code-barre': '<path d="M3 5v14"/><path d="M6 5v14"/><path d="M10 5v14"/><path d="M13 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/>',
   pilule: '<path d="M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7z"/><path d="M8.5 8.5l7 7"/>',
   entree: '<path d="M12 3v12M7 10l5 5 5-5M4 15v4h16v-4"/>',
   sortie: '<path d="M12 15V3M7 8l5-5 5 5M4 15v4h16v-4"/>',

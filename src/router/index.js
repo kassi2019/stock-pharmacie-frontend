@@ -61,6 +61,13 @@ const pagesModules = [
   // ---------- Lot 4 : seuils et alertes ----------
   { path: 'alertes', name: 'alertes', redirect: (to) => ({ name: 'retraits', query: { onglet: to.query.onglet || 'stock-bas' } }) },
   // ---------- Lot 3 : inventaires ----------
+  // Codes-barres (écran du téléphone) : droits « Médicaments et prix »
+  {
+    path: 'codes-barres',
+    name: 'codes-barres',
+    component: () => import('../views/produits/CodesBarres.vue'),
+    meta: { module: 'produits', titre: 'Codes-barres' },
+  },
   // ---------- Utilisateurs (personnel, comptes, profils) et gestion de la paie ----------
   { path: 'utilisateurs', name: 'utilisateurs', component: () => import('../views/utilisateurs/UtilisateursView.vue') },
   { path: 'paie', name: 'paie', component: () => import('../views/paie/PaieView.vue') },

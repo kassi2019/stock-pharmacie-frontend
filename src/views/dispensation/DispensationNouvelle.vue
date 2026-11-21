@@ -6,6 +6,11 @@
   unité (boîte / plaque si le produit se vend au détail), quantité, prix.
   Chaque ligne montre le stock disponible et l'état de couleur (§ 13.3) ;
   une quantité supérieure au stock est signalée et refusée par le serveur.
+  CODE-BARRES : le champ « Scanner ou saisir » ajoute le médicament (1 boîte) :
+  caméra du téléphone / de la tablette (📷), saisie au clavier + Entrée, ou
+  douchette USB. Le même médicament scanné à nouveau : quantité + 1.
+  « 📱 Scanner avec le téléphone » : la caissière scanne les boîtes à la suite sur le
+  téléphone (écran Codes-barres) et elles s'ajoutent AUSSITÔT ici.
   À la validation, le serveur sort le stock en FEFO (lot le plus proche de la
   péremption d'abord, jamais un lot périmé) puis ouvre la fiche de la dispensation.
   =============================================================================
@@ -15,6 +20,31 @@
     <EnteteModule icone="sortie" titre="Nouvelle dispensation" description="Sortie de stock en FEFO : premier périmé, premier sorti." />
 
     <form class="bloc" @submit.prevent="valider">
+      <!-- Scan ou saisie du code-barres (caméra, clavier, douchette) -->
+      <div class="zone-scan">
+        <div class="ligne-scan">
+          <ChampCodeBarre ref="champCode" autofocus continu titre-camera="Scanner les boîtes vendues" @code="ajouterParCode" />
+          <button v-if="!telephoneActif" type="button" class="bouton-secondaire" @click="demarrerTelephone">📱 Scanner avec le téléphone</button>
+        </div>
+        <div v-if="telephoneActif" class="attente-telephone">
+          <span class="pulsation"></span>
+          <div>
+            <strong>Le téléphone peut scanner les boîtes…</strong>
+            <small>
+              Sur le téléphone : écran <strong>Codes-barres</strong> → « Le poste attend un code » → <strong>Scanner</strong>.
+              {{ telephoneRecus ? `${telephoneRecus} boîte(s) reçue(s).` : '' }}
+            </small>
+          </div>
+          <button type="button" class="bouton-secondaire" @click="arreterTelephone()">Terminer</button>
+        </div>
+        <p v-if="dernierAjout" class="dernier-ajout" :class="{ inconnu: dernierAjout.inconnu }">
+          <template v-if="dernierAjout.inconnu">
+            ✗ Code <strong class="code">{{ dernierAjout.code }}</strong> inconnu : choisissez le médicament par son nom ci-dessous.
+          </template>
+          <template v-else>✓ {{ dernierAjout.texte }}</template>
+        </p>
+      </div>
+
       <h4 class="section">Médicaments</h4>
       <div class="tableau-conteneur">
         <table class="tableau lignes">
@@ -30,7 +60,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(l, i) in f.lignes" :key="l.cle">
+            <tr v-for="(l, i) in f.lignes" :key="l.cle" :class="{ 'ligne-scannee': l.cle === ligneEclairee }">
               <td>
                 <ListeDeroulante
                   v-model="l.produitId"
@@ -96,6 +126,10 @@ import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import EnteteModule from '@/components/EnteteModule.vue'
 import ListeDeroulante from '@/components/ListeDeroulante.vue'
+import ChampCodeBarre from '@/components/ChampCodeBarre.vue'
+import { bip } from '@/utils/codeBarre'
+import { utiliserScanDistant } from '@/utils/scanDistant'
+import api from '@/services/api'
 import EtatBadge from '@/components/EtatBadge.vue'
 import { montant, quantite } from '@/utils/format'
 import { utiliserActualisation } from '@/utils/actualisation'
@@ -142,12 +176,78 @@ function ajouterLigne() {
   f.value.lignes.push(nouvelleLigne())
 }
 
+// ---------------------------------------------------------------------------
+// CODE-BARRES : un scan = 1 boîte (ou 1 plaque si le code est celui d'une plaque)
+// ---------------------------------------------------------------------------
+const champCode = ref(null)
+const dernierAjout = ref(null)
+const ligneEclairee = ref(null)
+
+/** Médicament d'un code : dans la liste chargée, sinon demandé au serveur (code ajouté entre-temps). */
+async function chercherCode(code) {
+  for (const m of medicaments.value) {
+    const c = m.codesBarres?.find((x) => x.code === code)
+    if (c) return { produit: m, unite: c.unite }
+  }
+  try {
+    const { data } = await api.get(`/produits/code-barre/${encodeURIComponent(code)}`)
+    await store.dispatch('referentiel/charger', { liste: 'medicaments' })
+    const produit = medicaments.value.find((m) => m.id === data.produit.id)
+    return produit ? { produit, unite: data.unite } : null
+  } catch {
+    return null
+  }
+}
+
+async function ajouterParCode(code) {
+  const trouve = await chercherCode(code)
+  if (!trouve) {
+    bip(true)
+    dernierAjout.value = { inconnu: true, code }
+    return
+  }
+  const p = trouve.produit
+  const possibles = unites(p).map((u) => u.id)
+  const unite = possibles.includes(trouve.unite) ? trouve.unite : possibles[0]
+  // Déjà dans la vente avec la même unité : quantité + 1 ; sinon ligne vide réutilisée, ou nouvelle ligne
+  let ligne = f.value.lignes.find((l) => l.produitId === p.id && l.unite === unite)
+  if (ligne) ligne.quantite = (Number(ligne.quantite) || 0) + 1
+  else {
+    ligne = f.value.lignes.find((l) => !l.produitId)
+    if (!ligne) {
+      ligne = nouvelleLigne()
+      f.value.lignes.push(ligne)
+    }
+    Object.assign(ligne, { produitId: p.id, unite, quantite: 1 })
+  }
+  const libelleUnite = unites(p).find((u) => u.id === unite)?.libelle ?? unite
+  dernierAjout.value = { texte: `${p.designation} — ${ligne.quantite} ${libelleUnite.toLowerCase()}` }
+  ligneEclairee.value = ligne.cle
+  setTimeout(() => {
+    if (ligneEclairee.value === ligne.cle) ligneEclairee.value = null
+  }, 1200)
+  if (depasse(ligne)) bip(true)
+}
+
+// Scan avec le téléphone : chaque boîte scannée sur le téléphone arrive aussitôt dans la vente
+const {
+  actif: telephoneActif,
+  recus: telephoneRecus,
+  demarrer: demarrerTelephone,
+  arreter: arreterTelephone,
+} = utiliserScanDistant({
+  libelle: () => `Vente — ${store.state.auth.utilisateur?.nom ?? 'caisse'}`,
+  continu: true,
+  surCode: ajouterParCode,
+})
+
 async function valider() {
   enregistrement.value = true
   try {
     const d = await store.dispatch('sorties/creerDispensation', {
       lignes: f.value.lignes.map((l) => ({ produitId: l.produitId, unite: l.unite, quantite: Number(l.quantite) })),
     })
+    if (telephoneActif.value) arreterTelephone()
     store.dispatch('notifications/succes', `Dispensation ${d.numero} validée.`)
     router.push({ name: 'dispensation-fiche', params: { id: d.id } })
   } catch (e) {
@@ -188,6 +288,24 @@ utiliserActualisation(() => store.dispatch('referentiel/charger', { liste: 'medi
 .lignes td {
   vertical-align: top;
 }
+.zone-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.dernier-ajout {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #15803d;
+}
+.dernier-ajout.inconnu {
+  color: var(--danger);
+}
+.ligne-scannee td {
+  background: #e8f5e9;
+  transition: background 0.3s;
+}
 .col-produit {
   width: 38%;
 }
@@ -224,5 +342,29 @@ utiliserActualisation(() => store.dispatch('referentiel/charger', { liste: 'medi
   .grille-formulaire.trois-colonnes {
     grid-template-columns: 1fr;
   }
+}
+.ligne-scan { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.ligne-scan > :first-child { flex: 1; min-width: 260px; }
+.attente-telephone {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+.attente-telephone > div { flex: 1; }
+.attente-telephone small { display: block; color: var(--texte-sur-fond); }
+.pulsation {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulsation 1.2s infinite;
+}
+@keyframes pulsation {
+  0% { box-shadow: 0 0 0 0 rgba(2, 136, 209, 0.6); }
+  100% { box-shadow: 0 0 0 12px rgba(2, 136, 209, 0); }
 }
 </style>

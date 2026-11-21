@@ -15,6 +15,9 @@
       :type="visible ? 'text' : 'password'"
       :placeholder="placeholder"
       :autocomplete="autocomplete"
+      autocapitalize="off"
+      autocorrect="off"
+      spellcheck="false"
       :required="obligatoire"
       @input="emit('update:modelValue', $event.target.value)"
     />

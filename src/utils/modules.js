@@ -12,6 +12,9 @@
  * - tuile : false = pas de tuile sur l'accueil (droits seulement : ex. Médicaments et prix,
  *           onglets du Paramétrage)
  * - accesAussi : la tuile s'ouvre aussi avec le droit VOIR de ces modules
+ * - mobileSeulement : tuile seulement sur téléphone / tablette (ex. Codes-barres)
+ * - droitsDe : écran sans droits propres, qui suit ceux d'un autre module (absent de la
+ *              grille des profils)
  * - mobile : proposé sur l'application mobile (§ 17 : stock et états, alertes, retraits, points financiers)
  *
  * Qui voit / modifie quoi : décidé par le PROFIL de l'utilisateur (store auth).
@@ -46,6 +49,21 @@ export const MODULES = [
       "Catalogue des médicaments, prix de vente et d’achat, stock et lots par produit.",
     chapitre: "§ 7",
     lot: 1,
+    disponible: true,
+  },
+  {
+    // Écran du téléphone pour scanner les boîtes : suit les droits « Médicaments et prix »
+    route: "codes-barres",
+    droitsDe: "produits",
+    accesAussi: ["produits"],
+    mobile: true,
+    mobileSeulement: true,
+    titre: "Codes-barres",
+    court: "Codes-barres",
+    icone: "code-barre",
+    description: "Scanner une boîte pour la retrouver, ou rattacher son code-barres au médicament.",
+    chapitre: "§ 7",
+    lot: 6,
     disponible: true,
   },
   {

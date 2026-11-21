@@ -1,7 +1,7 @@
 {
   "name": "PharmaStock — Gestion de stock de la pharmacie",
   "short_name": "PharmaStock",
-  "description": "Stock et états, alertes de péremption et de stock bas, retraits de lots et points financiers de la pharmacie.",
+  "description": "Ventes avec scan des codes-barres, stock et alertes, réceptions, inventaires et paie de la pharmacie.",
   "lang": "fr",
   "start_url": "/",
   "scope": "/",
@@ -9,15 +9,75 @@
   "orientation": "any",
   "background_color": "#f0f8fe",
   "theme_color": "#0288d1",
-  "categories": ["medical", "business", "productivity"],
+  "categories": [
+    "medical",
+    "business",
+    "productivity"
+  ],
   "icons": [
-    { "src": "/icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icones/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icones/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icones/icone-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Alertes de stock", "short_name": "Alertes", "url": "/alertes?onglet=stock-bas", "icons": [{ "src": "/icones/icone-192.png", "sizes": "192x192" }] },
-    { "name": "Péremptions", "short_name": "Péremptions", "url": "/peremptions", "icons": [{ "src": "/icones/icone-192.png", "sizes": "192x192" }] },
-    { "name": "Points financiers", "short_name": "Rapports", "url": "/rapports", "icons": [{ "src": "/icones/icone-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Nouvelle vente",
+      "short_name": "Vente",
+      "url": "/dispensation/nouvelle",
+      "icons": [
+        {
+          "src": "/icones/icone-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Codes-barres",
+      "short_name": "Codes-barres",
+      "url": "/codes-barres",
+      "icons": [
+        {
+          "src": "/icones/icone-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Alertes de stock",
+      "short_name": "Alertes",
+      "url": "/retraits?onglet=stock-bas",
+      "icons": [
+        {
+          "src": "/icones/icone-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Médicaments",
+      "short_name": "Médicaments",
+      "url": "/parametres?onglet=medicaments",
+      "icons": [
+        {
+          "src": "/icones/icone-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

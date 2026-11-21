@@ -6,6 +6,7 @@
       <EnteteModule icone="utilisateurs" titre="Utilisateurs"
                     description="Comptes, profils et droits d'accès." />
 
+  (Le bouton « ← Retour » est dans la barre du haut, pas dans cet en-tête.)
   Un bouton (ou autre contenu) peut être placé à droite avec le slot "actions" :
       <EnteteModule ...>
         <template #actions><button>...</button></template>
@@ -55,6 +56,7 @@ defineProps({
   background: rgba(255, 255, 255, 0.2);
 }
 .entete-texte { flex: 1; }
+
 .entete-module h2 { margin: 0; font-size: 1.4rem; }
 .entete-module p { margin: 0.2rem 0 0; opacity: 0.9; }
 .entete-actions { display: flex; gap: 0.5rem; }

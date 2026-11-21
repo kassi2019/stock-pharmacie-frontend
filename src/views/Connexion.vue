@@ -61,6 +61,9 @@ async function connexion() {
             v-model="matricule"
             class="maj"
             autocomplete="username"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
             placeholder="Votre matricule"
             required
             autofocus
@@ -74,6 +77,9 @@ async function connexion() {
               v-model="motDePasse"
               :type="voirMotDePasse ? 'text' : 'password'"
               autocomplete="current-password"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
               placeholder="Votre mot de passe"
               required
             />
