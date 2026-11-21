@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useStore } from 'vuex'
 import api from '../../services/api'
 import EtatBadge from '../../components/EtatBadge.vue'
-import { GESTION_STOCK, PRIX_ACHAT } from '../../utils/roles'
 import { date, montant, quantite } from '../../utils/format'
 import { erreur } from '../../utils/alertes'
 
@@ -11,8 +10,8 @@ const props = defineProps({ id: { type: String, required: true } })
 const store = useStore()
 
 const produit = ref(null)
-const peutGerer = computed(() => store.getters['auth/peut'](GESTION_STOCK))
-const voitPrixAchat = computed(() => store.getters['auth/peut'](PRIX_ACHAT))
+const peutGerer = computed(() => store.getters['auth/peutModifier']('produits'))
+const voitPrixAchat = computed(() => store.getters['auth/voitPrixAchat'])
 
 const valeurStock = computed(() =>
   (produit.value?.lots ?? [])
@@ -40,7 +39,7 @@ watch(() => props.id, charger, { immediate: true })
   <div v-if="produit">
     <div class="entete-page">
       <div>
-        <router-link :to="{ name: 'produits' }">← Produits</router-link>
+        <router-link :to="{ name: 'parametres', query: { onglet: 'medicaments' } }">← Médicaments</router-link>
         <h1>
           {{ produit.designation }}
           <EtatBadge :etat="produit.etatStock" />
@@ -48,7 +47,7 @@ watch(() => props.id, charger, { immediate: true })
         </h1>
       </div>
       <div v-if="peutGerer" class="actions">
-        <router-link class="btn" :to="{ name: 'produits' }">
+        <router-link class="btn" :to="{ name: 'parametres', query: { onglet: 'medicaments' } }">
           Retour au catalogue
         </router-link>
       </div>

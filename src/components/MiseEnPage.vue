@@ -13,7 +13,6 @@ import { useRoute, useRouter } from 'vue-router'
 import Icone from './Icone.vue'
 import MonMotDePasse from './MonMotDePasse.vue'
 import { moduleParRoute } from '../utils/modules'
-import { ROLES } from '../utils/roles'
 import { utiliserDeconnexionAuto } from '../utils/deconnexionAuto'
 import { utiliserActualisation } from '../utils/actualisation'
 
@@ -41,12 +40,17 @@ const fenetreMotDePasse = ref(false)
 // Déconnexion automatique après inactivité (délai : Paramètres généraux)
 utiliserDeconnexionAuto()
 
-// Alertes permanentes d'en-tête (§ 13.3) : pas pour le médecin (ni quantités ni stock)
-const voitAlertes = computed(() => store.getters['auth/role'] !== 'MEDECIN')
+// Alertes permanentes d'en-tête (§ 13.3) : droits « alertes » et « quantités » du profil
+const voitAlertes = computed(
+  () => store.getters['auth/peutVoir']('retraits') && store.getters['auth/voitPrixVente'],
+)
 const alertes = computed(() => store.state.alertes.enTete)
 function chargerAlertes() {
   if (voitAlertes.value) store.dispatch('alertes/chargerEnTete').catch(() => {})
 }
+// Droits du profil relus à chaque actualisation : un changement fait par
+// l'administrateur s'applique sans reconnexion
+utiliserActualisation(() => store.dispatch('auth/rafraichir').catch(() => {}))
 chargerAlertes()
 utiliserActualisation(chargerAlertes)
 
@@ -83,7 +87,7 @@ function deconnexion() {
       <div class="droite">
         <div v-if="voitAlertes" class="alertes-entete">
           <router-link
-            :to="{ name: 'alertes', query: { onglet: 'stock-bas' } }"
+            :to="{ name: 'retraits', query: { onglet: 'stock-bas' } }"
             class="alerte-entete rouge"
             :class="{ zero: !alertes.stockBas }"
             title="Produits en rupture ou sous stock"
@@ -93,7 +97,7 @@ function deconnexion() {
             <strong>{{ alertes.stockBas }}</strong>
           </router-link>
           <router-link
-            :to="{ name: 'alertes', query: { onglet: 'peremptions' } }"
+            :to="{ name: 'retraits', query: { onglet: 'peremptions' } }"
             class="alerte-entete orange"
             :class="{ zero: !alertes.peremption }"
             :title="alertes.perimes ? `${alertes.perimes} lot(s) déjà périmé(s)` : 'Lots qui périment bientôt'"
@@ -114,7 +118,7 @@ function deconnexion() {
           <button type="button" class="avatar" title="Mon mot de passe" @click="fenetreMotDePasse = true">{{ initiales }}</button>
           <span class="utilisateur-infos">
             <span class="utilisateur-nom">{{ utilisateur?.nom }}</span>
-            <span class="utilisateur-role">{{ ROLES[utilisateur?.role] ?? utilisateur?.role }}</span>
+            <span class="utilisateur-role">{{ utilisateur?.roleLibelle ?? utilisateur?.role }}</span>
           </span>
         </div>
 

@@ -2,9 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import store from '../store'
 import { MODULES, moduleParRoute } from '../utils/modules'
 
-/** Rôles d'un module (définis une seule fois dans utils/modules.js). */
-const roles = (nom) => moduleParRoute(nom)?.roles ?? []
-const GESTION = ['ADMIN', 'RESPONSABLE']
+/*
+ * meta.module : module de la page ; on ne l'ouvre qu'avec le droit VOIR du profil
+ * (meta.droit pour exiger un autre droit, ex. MODIFIER pour une saisie).
+ */
 
 /** Pages des modules déjà développés. */
 const pagesModules = [
@@ -12,21 +13,25 @@ const pagesModules = [
     path: 'parametres',
     name: 'parametres',
     component: () => import('../views/parametrage/ParametrageView.vue'),
+    // Ouvert avec le droit VOIR du Paramétrage OU des Médicaments et prix ;
+    // les onglets Médicaments / Prix utilisent les droits « produits »
+    meta: { module: 'parametres', modulesAcces: ['parametres', 'produits'], modulesParOnglet: { medicaments: 'produits', prix: 'produits' } },
   },
-  { path: 'produits', name: 'produits', component: () => import('../views/produits/Produits.vue') },
+  // Produits et médicaments : onglets « Médicaments » et « Prix » du Paramétrage
+  { path: 'produits', name: 'produits', redirect: (to) => ({ name: 'parametres', query: { onglet: to.query.onglet === 'prix' ? 'prix' : 'medicaments', ...(to.query.medicament ? { medicament: to.query.medicament } : {}) } }) },
   {
     path: 'produits/:id',
     name: 'produit',
     component: () => import('../views/produits/ProduitFiche.vue'),
     props: true,
-    meta: { roles: roles('produits'), module: 'produits', titre: 'Fiche produit' },
+    meta: { module: 'produits', titre: 'Fiche produit' },
   },
   {
     path: 'fournisseurs/:id',
     name: 'fournisseur',
     component: () => import('../views/fournisseurs/FournisseurHistorique.vue'),
     props: true,
-    meta: { roles: roles('parametres'), module: 'parametres', titre: 'Historique fournisseur' },
+    meta: { module: 'parametres', titre: 'Historique fournisseur' },
   },
   { path: 'receptions', name: 'receptions', component: () => import('../views/receptions/Receptions.vue') },
   // Saisie et consultation dans la fenêtre de la liste (comme le district)
@@ -38,35 +43,40 @@ const pagesModules = [
     path: 'dispensation/nouvelle',
     name: 'dispensation-nouvelle',
     component: () => import('../views/dispensation/DispensationNouvelle.vue'),
-    meta: { roles: moduleParRoute('dispensation').rolesModif, module: 'dispensation', titre: 'Nouvelle dispensation' },
+    meta: { module: 'dispensation', droit: 'MODIFIER', titre: 'Nouvelle dispensation' },
   },
   {
     path: 'dispensation/:id',
     name: 'dispensation-fiche',
     component: () => import('../views/dispensation/DispensationFiche.vue'),
     props: true,
-    meta: { roles: roles('dispensation'), module: 'dispensation', titre: 'Fiche dispensation' },
+    meta: { module: 'dispensation', titre: 'Fiche dispensation' },
   },
-  { path: 'retraits', name: 'retraits', component: () => import('../views/retraits/Retraits.vue') },
-  { path: 'peremptions', name: 'peremptions', component: () => import('../views/peremptions/Peremptions.vue') },
-  { path: 'mouvements', name: 'mouvements', component: () => import('../views/mouvements/Mouvements.vue') },
+  // Lots, péremptions et retraits : un seul module à deux onglets
+  { path: 'retraits', name: 'retraits', component: () => import('../views/retraits/LotsRetraits.vue') },
+  { path: 'peremptions', name: 'peremptions', redirect: { name: 'retraits', query: { onglet: 'peremptions' } } },
+  { path: 'mouvements', name: 'mouvements', redirect: { name: 'inventaires', query: { onglet: 'mouvements' } } },
   // ---------- Lot 5 : rapports et points financiers ----------
   { path: 'rapports', name: 'rapports', component: () => import('../views/rapports/Rapports.vue') },
   // ---------- Lot 4 : seuils et alertes ----------
-  { path: 'alertes', name: 'alertes', component: () => import('../views/alertes/Alertes.vue') },
+  { path: 'alertes', name: 'alertes', redirect: (to) => ({ name: 'retraits', query: { onglet: to.query.onglet || 'stock-bas' } }) },
   // ---------- Lot 3 : inventaires ----------
-  { path: 'inventaires', name: 'inventaires', component: () => import('../views/inventaires/Inventaires.vue') },
+  // ---------- Utilisateurs (personnel, comptes, profils) et gestion de la paie ----------
+  { path: 'utilisateurs', name: 'utilisateurs', component: () => import('../views/utilisateurs/UtilisateursView.vue') },
+  { path: 'paie', name: 'paie', component: () => import('../views/paie/PaieView.vue') },
+  // Inventaires et mouvements : un seul module à deux onglets
+  { path: 'inventaires', name: 'inventaires', component: () => import('../views/inventaires/InventairesMouvements.vue') },
   {
     path: 'inventaires/:id',
     name: 'inventaire',
     component: () => import('../views/inventaires/InventaireFiche.vue'),
     props: true,
-    meta: { roles: roles('inventaires'), module: 'inventaires', titre: 'Fiche inventaire' },
+    meta: { module: 'inventaires', titre: 'Fiche inventaire' },
   },
 ]
-// Rôles de la page principale de chaque module
+// Page principale de chaque module
 for (const p of pagesModules) {
-  if (!p.meta && moduleParRoute(p.name)) p.meta = { roles: roles(p.name) }
+  if (!p.meta && moduleParRoute(p.name)) p.meta = { module: p.name }
 }
 
 /** Modules prévus dans un lot ultérieur : page « en préparation ». */
@@ -74,7 +84,7 @@ const pagesAVenir = MODULES.filter((m) => !m.disponible).map((m) => ({
   path: m.route,
   name: m.route,
   component: () => import('../views/ModuleAVenir.vue'),
-  meta: { roles: m.roles },
+  meta: { module: m.route },
 }))
 
 const routes = [
@@ -98,12 +108,25 @@ const routes = [
 
 const router = createRouter({ history: createWebHistory(), routes })
 
-router.beforeEach((to) => {
+/** Droits relus au serveur une fois par ouverture de l'application. */
+let droitsRelus = false
+
+router.beforeEach(async (to) => {
   const connecte = store.getters['auth/estConnecte']
   if (!to.meta.public && !connecte) return { name: 'connexion' }
   if (to.name === 'connexion' && connecte) return { name: 'accueil' }
-  const requis = to.matched.flatMap((r) => r.meta.roles ?? [])
-  if (requis.length && !store.getters['auth/peut'](requis)) return { name: 'accueil' }
+  if (connecte && !droitsRelus) {
+    droitsRelus = true
+    try {
+      await store.dispatch('auth/rafraichir')
+    } catch {
+      // Session expirée : l'intercepteur de services/api.js a fermé la session
+      if (!store.getters['auth/estConnecte']) return { name: 'connexion' }
+    }
+  }
+  const module = to.matched.map((r) => r.meta.module).filter(Boolean).pop()
+  const modules = to.meta.modulesAcces ?? (module ? [module] : [])
+  if (modules.length && !modules.some((m) => store.getters['auth/aDroit'](m, to.meta.droit ?? 'VOIR'))) return { name: 'accueil' }
 })
 
 export default router

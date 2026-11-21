@@ -166,8 +166,8 @@
           <TableauHistoriquePrix :lignes="historiqueVente" @corriger="ouvrirCorrection" />
         </section>
 
-        <!-- =================== PRIX D'ACHAT =================== -->
-        <section class="carte-prix">
+        <!-- =================== PRIX D'ACHAT (droit « prix d'achat » du profil) =================== -->
+        <section v-if="voitPrixAchat" class="carte-prix">
           <header class="entete-carte">
             <div>
               <h3>Prix d'achat</h3>
@@ -270,6 +270,7 @@ import { aujourdhui, date, montant } from '@/utils/format'
 import { corrigerPrixVente, creerPrixVente, historiquePrixAchat, historiquePrixVente } from '@/api/parametrage'
 
 const store = useStore()
+const voitPrixAchat = computed(() => store.getters['auth/voitPrixAchat'])
 const route = useRoute()
 const router = useRouter()
 
@@ -409,7 +410,10 @@ function retourListe() {
 async function chargerHistorique() {
   if (!produitId.value) return
   try {
-    const [vente, achat] = await Promise.all([historiquePrixVente(produitId.value), historiquePrixAchat(produitId.value)])
+    const [vente, achat] = await Promise.all([
+      historiquePrixVente(produitId.value),
+      voitPrixAchat.value ? historiquePrixAchat(produitId.value) : [],
+    ])
     historiqueVente.value = vente
     historiqueAchat.value = achat
     nouveauPrix.value = produitChoisi.value ? prixVente(produitChoisi.value) : 0

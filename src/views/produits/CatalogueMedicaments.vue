@@ -250,7 +250,6 @@ import { utiliserTableau } from '@/utils/pagination'
 import { utiliserActualisation } from '@/utils/actualisation'
 import { confirmer } from '@/utils/alertes'
 import { ETATS } from '@/utils/etats'
-import { PRIX_ACHAT } from '@/utils/roles'
 import { aujourdhui, montant, quantite } from '@/utils/format'
 import { enDateImport, enNombreImport, enOuiNon, enTexte, sansChampsVides, trouverParCode } from '@/utils/importFichier'
 
@@ -275,8 +274,8 @@ const enregistrement = ref(false)
 const formulaire = ref(null)
 
 /** Le médecin ne voit ni prix ni quantités (§ 6) ; le prix d'achat est réservé à la gestion. */
-const voitStock = computed(() => store.getters['auth/role'] !== 'MEDECIN')
-const voitPrixAchat = computed(() => store.getters['auth/peut'](PRIX_ACHAT))
+const voitStock = computed(() => store.getters['auth/voitPrixVente'])
+const voitPrixAchat = computed(() => store.getters['auth/voitPrixAchat'])
 
 const medicaments = computed(() => store.state.referentiel.medicaments)
 const formes = computed(() => store.state.referentiel.formes)

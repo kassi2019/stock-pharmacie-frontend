@@ -204,7 +204,6 @@ import ColonneTri from '@/components/ColonneTri.vue'
 import FenetreModale from '@/components/FenetreModale.vue'
 import { utiliserTableau } from '@/utils/pagination'
 import { confirmer, demanderTexte, notifier } from '@/utils/alertes'
-import { GESTION_STOCK, PRIX_ACHAT } from '@/utils/roles'
 import { date, dateHeure, montant, quantite } from '@/utils/format'
 
 const props = defineProps({ id: { type: [String, Number], required: true } })
@@ -225,9 +224,9 @@ const VUES = [
 const inv = computed(() => store.state.inventaires.courant)
 const lignes = computed(() => inv.value?.lignes ?? [])
 const modifiable = computed(() => inv.value?.statut === 'EN_COURS')
-const peutCompter = computed(() => store.getters['auth/peut']([...GESTION_STOCK, 'AGENT']))
-const peutValider = computed(() => store.getters['auth/peut'](GESTION_STOCK))
-const voitValeur = computed(() => store.getters['auth/peut'](PRIX_ACHAT))
+const peutCompter = computed(() => store.getters['auth/peutModifier']('inventaires'))
+const peutValider = computed(() => store.getters['auth/peutValider']('inventaires'))
+const voitValeur = computed(() => store.getters['auth/voitPrixAchat'])
 
 /** Saisie locale (le store Vuex n'est modifié que par ses actions). */
 const saisie = ref({})

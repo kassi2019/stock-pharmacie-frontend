@@ -1,6 +1,6 @@
 <!--
   =============================================================================
-  MODULE — INVENTAIRES (§ 12) — inventaire PAR LOT, au fil de l'eau
+  ONGLET « INVENTAIRE » du module Inventaires et mouvements (§ 12) — PAR LOT, au fil de l'eau
   (même présentation et mêmes fonctions que l'application de district)
   =============================================================================
   Une CARTE par médicament :
@@ -23,14 +23,8 @@
   =============================================================================
 -->
 <template>
-  <div class="page">
-    <EnteteModule
-      icone="liste"
-      titre="Inventaires"
-      description="Inventaire par lot : saisissez le stock réel compté, l'écart est calculé, justifié puis validé."
-    />
-
-    <section class="bloc">
+  <div class="onglet-contenu">
+    <div>
       <!-- ===================== BARRE ===================== -->
       <div class="barre-outils">
         <input v-model="recherche" class="recherche" type="search" placeholder="Rechercher un médicament…" />
@@ -43,7 +37,7 @@
           :colonnes-pdf="COLONNES_EXPORT"
           :lignes="lignesExport"
         />
-        <button v-si-modif class="bouton-valider-tout" :disabled="nbSaisies === 0 || enregistrement" @click="validerTout">
+        <button v-if="peutValider" class="bouton-valider-tout" :disabled="nbSaisies === 0 || enregistrement" @click="validerTout">
           ✅ Valider tout l'inventaire ({{ nbSaisies }})
         </button>
         <button class="bouton-secondaire" title="Récapitulatif des lots comptés, à imprimer en A4" @click="ouvrirFiche">
@@ -110,7 +104,7 @@
             <span v-if="nbLotsVides(m) && filtreEtat !== 'ZERO'" class="lots-vides" title="Choisir « Stock à zéro » dans les filtres pour les revoir">
               {{ nbLotsVides(m) }} lot(s) à 0 masqué(s)
             </span>
-            <button v-si-modif type="button" class="bouton-ajout-lot" title="Ajouter un lot oublié ou mal enregistré à l'entrée" @click="ouvrirAjoutLot(m)">
+            <button v-if="peutValider" type="button" class="bouton-ajout-lot" title="Ajouter un lot oublié ou mal enregistré à l'entrée" @click="ouvrirAjoutLot(m)">
               ＋ Ajouter un lot
             </button>
           </div>
@@ -138,7 +132,7 @@
                     class="inventaire-input inventaire-lot maj"
                     :class="{ modifie: corrections[l.id].numeroLot.trim().toUpperCase() !== l.numeroLot }"
                     :title="`N° de lot enregistré : ${l.numeroLot}`"
-                    :disabled="!peutModifier"
+                    :disabled="!peutValider"
                   />
                 </td>
                 <td>
@@ -148,7 +142,7 @@
                     class="inventaire-input inventaire-peremption"
                     :class="{ modifie: corrections[l.id].datePeremption !== jourIso(l.datePeremption) }"
                     :title="`Péremption enregistrée : ${date(l.datePeremption)}`"
-                    :disabled="!peutModifier"
+                    :disabled="!peutValider"
                   />
                   <span v-if="peremption(l)" class="badge peremption" :class="peremption(l).classe">{{ peremption(l).libelle }}</span>
                 </td>
@@ -163,7 +157,7 @@
                     min="0"
                     class="inventaire-input"
                     :placeholder="String(l.quantiteRestante)"
-                    :disabled="!peutModifier"
+                    :disabled="!peutValider"
                   />
                 </td>
                 <td>
@@ -179,15 +173,15 @@
                     :class="{ manquant: !justifications[l.id] }"
                     maxlength="255"
                     placeholder="Cause de l'écart (obligatoire)"
-                    :disabled="!peutModifier"
+                    :disabled="!peutValider"
                   />
                 </td>
                 <td class="actions">
-                  <button v-si-modif type="button" class="bouton-valider" :disabled="!aValider(l) || enregistrement" @click="validerLot(m, l)">
+                  <button v-if="peutValider" type="button" class="bouton-valider" :disabled="!aValider(l) || enregistrement" @click="validerLot(m, l)">
                     ✅ Valider
                   </button>
                   <button
-                    v-si-modif
+                    v-if="peutRetirer"
                     type="button"
                     class="bouton-retirer"
                     :disabled="l.quantiteRestante <= 0"
@@ -203,7 +197,7 @@
         </div>
         <Pagination v-model:page="page" v-model:taille="taille" :total="produits.length" />
       </div>
-    </section>
+    </div>
 
     <!-- ===================== RETRAIT ===================== -->
     <FenetreRetrait
@@ -316,7 +310,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useStore } from 'vuex'
-import EnteteModule from '@/components/EnteteModule.vue'
 import FenetreModale from '@/components/FenetreModale.vue'
 import FenetreRetrait from '@/components/FenetreRetrait.vue'
 import ListeDeroulante from '@/components/ListeDeroulante.vue'
@@ -325,14 +318,16 @@ import ImportExportTableau from '@/components/ImportExportTableau.vue'
 import EtatBadge from '@/components/EtatBadge.vue'
 import { utiliserPagination } from '@/utils/pagination'
 import { confirmer, notifier } from '@/utils/alertes'
-import { PRIX_ACHAT } from '@/utils/roles'
 import { aujourdhui, date, montant, quantite } from '@/utils/format'
 import { listerParametres } from '@/api/parametrage'
 
 const store = useStore()
 
-const peutModifier = computed(() => store.getters['auth/peutModifier']('inventaires'))
-const voitValeur = computed(() => store.getters['auth/peut'](PRIX_ACHAT))
+/** Saisir et valider les comptages, ajouter un lot : droit VALIDER sur les inventaires. */
+const peutValider = computed(() => store.getters['auth/peutValider']('inventaires'))
+/** Retirer un lot : droit MODIFIER sur le module Lots, péremptions et retraits. */
+const peutRetirer = computed(() => store.getters['auth/peutModifier']('retraits'))
+const voitValeur = computed(() => store.getters['auth/voitPrixAchat'])
 const stock = computed(() => store.state.inventaires.stock)
 const chargement = ref(false)
 
@@ -684,7 +679,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page {
+.onglet-contenu {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -748,7 +743,7 @@ onMounted(async () => {
   color: var(--muted);
   text-align: left;
 }
-.inventaire-lots td { padding: 0.4rem 0.65rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.inventaire-lots td { padding: 0.4rem 0.65rem; border-bottom: 1px solid var(--bord-tableau); font-size: 0.85rem; }
 .inventaire-lots tr.lot-corrige td { background: #fffdf5; }
 .inventaire-lots tr.lot-compte td { background: #f0f8fe; }
 .inventaire-input,

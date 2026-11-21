@@ -1,6 +1,6 @@
 <!--
   =============================================================================
-  MODULE — LOTS ET PÉREMPTIONS (§ 11)
+  ONGLET « PÉREMPTIONS » du module Lots, péremptions et retraits (§ 11)
   =============================================================================
   Lots encore en stock qui périment dans les N prochains jours (par défaut le
   délai d'alerte des Paramètres généraux), lots périmés compris, triés par date.
@@ -10,13 +10,7 @@
   =============================================================================
 -->
 <template>
-  <div class="page">
-    <EnteteModule
-      icone="calendrier"
-      titre="Lots et péremptions"
-      description="Lots proches de la péremption et lots périmés. Les périmés sont retirés automatiquement chaque nuit."
-    />
-
+  <div class="onglet-contenu">
     <div class="cartes">
       <div class="carte rouge">
         <small>Lots périmés en stock</small>
@@ -30,7 +24,7 @@
       </div>
     </div>
 
-    <section class="bloc">
+    <div>
       <div class="barre-outils">
         <input v-model="recherche" class="recherche" type="search" placeholder="Médicament ou n° de lot…" />
         <label class="champ-date">
@@ -41,7 +35,7 @@
         <label class="case-a-cocher"><input v-model="perimesSeulement" type="checkbox" /> Périmés seulement</label>
         <span class="espace"></span>
         <ImportExportTableau titre="Lots proches de la péremption" :sous-titre="sousTitre" nom-fichier="peremptions" :colonnes-pdf="COLONNES_PDF" :lignes="lignesTriees" />
-        <button v-si-modif class="bouton-secondaire" :disabled="!perimes.length" @click="retirerPerimes">Retirer les périmés</button>
+        <button v-si-modif="'retraits'" class="bouton-secondaire" :disabled="!perimes.length" @click="retirerPerimes">Retirer les périmés</button>
       </div>
 
       <div class="tableau-conteneur">
@@ -76,7 +70,7 @@
               <td v-if="voitValeur" class="nombre">{{ montant(l.valeur) }}</td>
               <td class="actions">
                 <router-link class="bouton-lien" :to="{ name: 'produit', params: { id: l.produit.id } }">Fiche</router-link>
-                <button v-si-modif class="bouton-lien danger" @click="lotARetirer = l">Retirer</button>
+                <button v-si-modif="'retraits'" class="bouton-lien danger" @click="lotARetirer = l">Retirer</button>
               </td>
             </tr>
           </tbody>
@@ -85,7 +79,7 @@
         <p v-if="!chargement && lotsAffiches.length === 0" class="tableau-vide">Aucun lot ne périme dans ce délai.</p>
         <p v-if="chargement" class="tableau-vide">Chargement…</p>
       </div>
-    </section>
+    </div>
 
     <FenetreRetrait
       v-if="lotARetirer"
@@ -100,7 +94,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
-import EnteteModule from '@/components/EnteteModule.vue'
 import ImportExportTableau from '@/components/ImportExportTableau.vue'
 import Pagination from '@/components/Pagination.vue'
 import ColonneTri from '@/components/ColonneTri.vue'
@@ -108,7 +101,6 @@ import FenetreRetrait from '@/components/FenetreRetrait.vue'
 import { utiliserTableau } from '@/utils/pagination'
 import { utiliserActualisation } from '@/utils/actualisation'
 import { confirmer } from '@/utils/alertes'
-import { PRIX_ACHAT } from '@/utils/roles'
 import { date, montant, quantite } from '@/utils/format'
 
 const store = useStore()
@@ -124,7 +116,7 @@ const delai = computed(() => donnees.value.delai)
 const lots = computed(() => donnees.value.lots)
 const perimes = computed(() => lots.value.filter((l) => l.perime))
 const proches = computed(() => lots.value.filter((l) => !l.perime))
-const voitValeur = computed(() => store.getters['auth/peut'](PRIX_ACHAT))
+const voitValeur = computed(() => store.getters['auth/voitPrixAchat'])
 const somme = (liste) => liste.reduce((s, l) => s + Number(l.valeur ?? 0), 0)
 
 const lotsAffiches = computed(() => {
@@ -152,6 +144,7 @@ async function charger() {
 async function apresRetrait() {
   lotARetirer.value = null
   await charger()
+  store.dispatch('alertes/chargerDetail').catch(() => {})
 }
 
 async function retirerPerimes() {
@@ -197,7 +190,7 @@ utiliserActualisation(charger)
 </script>
 
 <style scoped>
-.page {
+.onglet-contenu {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;

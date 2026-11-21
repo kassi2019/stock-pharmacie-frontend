@@ -1,6 +1,6 @@
 <!--
   =============================================================================
-  MODULE — MOUVEMENTS ET TRAÇABILITÉ (§ 14)
+  ONGLET « MOUVEMENTS » du module Inventaires et mouvements (traçabilité, § 14)
   =============================================================================
   Toutes les entrées, sorties, retraits, annulations et correctifs, filtrables
   par période, médicament, type et agent. Chaque ligne garde l'auteur, la date,
@@ -8,14 +8,8 @@
   =============================================================================
 -->
 <template>
-  <div class="page">
-    <EnteteModule
-      icone="fleches"
-      titre="Mouvements"
-      description="Historique complet du stock : chaque variation passe par un mouvement, avec son auteur et son document."
-    />
-
-    <section class="bloc">
+  <div class="onglet-contenu">
+    <div>
       <div class="barre-outils">
         <label class="champ-date">Du <ChampDate v-model="filtres.du" @change="charger" /></label>
         <label class="champ-date">Au <ChampDate v-model="filtres.au" @change="charger" /></label>
@@ -80,14 +74,13 @@
         <p v-if="!chargement && mouvementsAffiches.length === 0" class="tableau-vide">Aucun mouvement pour ces critères.</p>
         <p v-if="chargement" class="tableau-vide">Chargement…</p>
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
-import EnteteModule from '@/components/EnteteModule.vue'
 import ImportExportTableau from '@/components/ImportExportTableau.vue'
 import ListeDeroulante from '@/components/ListeDeroulante.vue'
 import Pagination from '@/components/Pagination.vue'
@@ -189,7 +182,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page {
+.onglet-contenu {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;

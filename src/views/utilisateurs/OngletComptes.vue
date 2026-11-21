@@ -1,23 +1,29 @@
 <!--
   =============================================================================
-  ONGLET « UTILISATEURS » (§ 5) — même fonctionnement que l'onglet Comptes du district
+  ONGLET « COMPTES UTILISATEURS » — même fonctionnement que le district
   =============================================================================
-  - Liste des comptes (recherche, filtre par rôle, inactifs, tri, pagination, PDF) ;
-  - « Nouveau compte » : matricule (identifiant de connexion), identité, rôle, mot de passe ;
-  - « Modifier » : identité, contact et rôle (le matricule ne change pas) ;
+  - Liste des comptes (recherche, filtre par profil, inactifs, tri, pagination, PDF) ;
+  - « Nouveau compte » : pour un membre du PERSONNEL qui n'a pas encore de
+    compte (nom, fonction et contacts viennent de sa fiche) ;
+  - « Modifier » : profil (l'identité se modifie dans l'onglet Personnel) ;
+  - L'IDENTIFIANT DE CONNEXION est le MATRICULE de la personne (grisé) ;
   - « Mot de passe » : réinitialisation ; « Désactiver » / « Réactiver ».
   Règles (vérifiées aussi par le serveur) :
     - mot de passe : 8 caractères minimum, au moins une lettre et un chiffre ;
     - on ne peut pas désactiver son propre compte ;
-    - il doit toujours rester au moins un administrateur actif.
+    - il doit toujours rester au moins un administrateur actif ;
+    - seul un administrateur donne le profil Administrateur.
+
+  Propriétés : comptes, personnel, profils (chargés par UtilisateursView.vue)
+  Événement  : @modifie -> la page recharge les listes
   =============================================================================
 -->
 <template>
   <div>
     <div class="barre-outils">
-      <input v-model="recherche" class="recherche" type="search" placeholder="Rechercher (nom, matricule)…" />
+      <input v-model="recherche" class="recherche" type="search" placeholder="Rechercher (nom, identifiant, fonction)…" />
       <div class="filtre">
-        <ListeDeroulante v-model="roleFiltre" :options="LISTE_ROLES" placeholder="Tous les rôles" />
+        <ListeDeroulante v-model="profilFiltre" :options="listeProfils" placeholder="Tous les profils" />
       </div>
       <label class="case-a-cocher">
         <input v-model="afficherInactifs" type="checkbox" /> Afficher les inactifs
@@ -39,7 +45,7 @@
           <tr>
             <ColonneTri v-model="tri" cle="utilisateur">Utilisateur</ColonneTri>
             <ColonneTri v-model="tri" cle="fonction">Fonction</ColonneTri>
-            <ColonneTri v-model="tri" cle="role">Rôle</ColonneTri>
+            <ColonneTri v-model="tri" cle="profil">Profil</ColonneTri>
             <th>Contact</th>
             <ColonneTri v-model="tri" cle="connexion">Dernière connexion</ColonneTri>
             <ColonneTri v-model="tri" cle="statut">Statut</ColonneTri>
@@ -50,9 +56,9 @@
           <tr v-for="u in lignesPage" :key="u.id" :class="{ 'ligne-inactive': !u.actif }">
             <td>
               <div class="personne">
-                <span class="avatar">{{ initiales(u) }}</span>
+                <Avatar :photo="u.personnel?.photo" :nom="u.nom" :prenoms="u.prenoms" />
                 <div>
-                  <strong>{{ [u.prenoms, u.nom].filter(Boolean).join(' ') }}</strong>
+                  <strong>{{ u.prenoms }} {{ u.nom }}</strong>
                   <span v-if="u.id === moi.id" class="badge badge-vert vous">vous</span>
                   <div class="code">{{ u.matricule }}</div>
                 </div>
@@ -60,9 +66,7 @@
             </td>
             <td>{{ u.fonction?.libelle || '—' }}</td>
             <td>
-              <span class="badge" :class="u.role === 'ADMIN' ? 'badge-rouge' : 'badge-vert'">
-                {{ ROLES[u.role] ?? u.role }}
-              </span>
+              <span class="badge" :class="u.role === 'ADMIN' ? 'badge-rouge' : 'badge-vert'">{{ u.roleLibelle }}</span>
             </td>
             <td class="contact">
               <div v-if="u.telephone">{{ u.telephone }}</div>
@@ -71,9 +75,7 @@
             </td>
             <td>{{ u.derniereConnexion ? dateHeure(u.derniereConnexion) : 'Jamais' }}</td>
             <td>
-              <span class="badge" :class="u.actif ? 'badge-vert' : 'badge-gris'">
-                {{ u.actif ? 'Actif' : 'Inactif' }}
-              </span>
+              <span class="badge" :class="u.actif ? 'badge-vert' : 'badge-gris'">{{ u.actif ? 'Actif' : 'Inactif' }}</span>
             </td>
             <td class="actions">
               <button v-si-modif class="bouton-lien" @click="ouvrirFormulaire(u)">Modifier</button>
@@ -93,8 +95,7 @@
         </tbody>
       </table>
       <Pagination v-model:page="page" v-model:taille="taille" :total="comptesAffiches.length" />
-      <p v-if="!chargement && comptesAffiches.length === 0" class="tableau-vide">Aucun compte.</p>
-      <p v-if="chargement" class="tableau-vide">Chargement…</p>
+      <p v-if="comptesAffiches.length === 0" class="tableau-vide">Aucun compte.</p>
     </div>
 
     <!-- ===================== FORMULAIRE CRÉATION / MODIFICATION ===================== -->
@@ -105,51 +106,43 @@
       @fermer="formulaire = null"
     >
       <form id="form-compte" class="grille-formulaire" @submit.prevent="enregistrer">
-        <!-- ---------- Identité ---------- -->
-        <h4 class="section pleine-largeur">Identité</h4>
-        <div>
-          <label class="obligatoire">Nom</label>
-          <input v-model.trim="formulaire.nom" class="maj" required maxlength="100" />
+        <h4 class="section pleine-largeur">Titulaire du compte</h4>
+        <div v-if="!formulaire.id" class="pleine-largeur">
+          <label class="obligatoire">Membre du personnel</label>
+          <ListeDeroulante
+            v-model="formulaire.personnelId"
+            :options="personnelSansCompte"
+            :champ-libelle="(p) => `${p.matricule} — ${p.prenoms || ''} ${p.nom}${p.fonction ? ' (' + p.fonction.libelle + ')' : ''}`"
+            placeholder="Choisir une personne sans compte…"
+          />
+          <small class="aide">
+            Seul le personnel actif sans compte est proposé. Pour une nouvelle personne, utilisez
+            l'onglet « Personnel » (fiche + compte en une fois).
+          </small>
         </div>
-        <div>
-          <label>Prénoms</label>
-          <input v-model.trim="formulaire.prenoms" class="maj" maxlength="150" />
-        </div>
-        <div>
-          <label>Fonction</label>
-          <ListeDeroulante v-model="formulaire.fonctionId" :options="fonctions" placeholder="— Aucune —" />
-          <small v-if="fonctions.length === 0" class="aide">Aucune fonction : ajoutez-en dans l'onglet « Fonctions ».</small>
-        </div>
-        <div>
-          <label>Téléphone</label>
-          <input v-model.trim="formulaire.telephone" maxlength="50" />
-        </div>
-        <div>
-          <label>E-mail</label>
-          <input v-model.trim="formulaire.email" type="email" maxlength="150" />
+        <div v-else class="pleine-largeur titulaire">
+          <Avatar :photo="formulaire.personnel?.photo" :nom="formulaire.nom" :prenoms="formulaire.prenoms" :taille="48" />
+          <div>
+            <strong>{{ formulaire.prenoms }} {{ formulaire.nom }}</strong>
+            <small>
+              {{ [formulaire.matricule, formulaire.fonction?.libelle].filter(Boolean).join(' · ') }}
+              — nom, fonction et contacts se modifient dans l'onglet « Personnel ».
+            </small>
+          </div>
         </div>
 
-        <!-- ---------- Compte ---------- -->
         <h4 class="section pleine-largeur">Compte</h4>
         <div>
-          <label :class="{ obligatoire: !formulaire.id }">Matricule (identifiant de connexion)</label>
-          <input
-            v-model.trim="formulaire.matricule"
-            class="maj"
-            :disabled="!!formulaire.id"
-            :required="!formulaire.id"
-            maxlength="30"
-            placeholder="ex. PH001"
-          />
-          <small v-if="formulaire.id" class="aide">Le matricule ne se modifie pas.</small>
+          <label>Identifiant de connexion</label>
+          <input :value="identifiantAffiche" disabled />
+          <small class="aide">C'est le matricule (il se change dans l'onglet « Personnel »).</small>
         </div>
         <div>
-          <label class="obligatoire">Rôle</label>
-          <ListeDeroulante v-model="formulaire.role" :options="LISTE_ROLES" obligatoire :effacable="false" />
-          <small v-if="formulaire.role" class="aide">{{ DESCRIPTIONS_ROLES[formulaire.role] }}</small>
+          <label class="obligatoire">Profil</label>
+          <ListeDeroulante v-model="formulaire.role" :options="profilsProposes" obligatoire :effacable="false" />
+          <small v-if="profilChoisi" class="aide">{{ profilChoisi.description }}</small>
         </div>
 
-        <!-- Mot de passe : seulement à la création (ensuite : bouton « Mot de passe ») -->
         <template v-if="!formulaire.id">
           <h4 class="section pleine-largeur">Mot de passe</h4>
           <div>
@@ -178,125 +171,106 @@
     <!-- ===================== RÉINITIALISATION DU MOT DE PASSE ===================== -->
     <FenetreModale
       v-if="reinitialisation"
-      :titre="`Nouveau mot de passe — ${[reinitialisation.utilisateur.prenoms, reinitialisation.utilisateur.nom].filter(Boolean).join(' ')}`"
+      :titre="`Nouveau mot de passe — ${reinitialisation.utilisateur.prenoms || ''} ${reinitialisation.utilisateur.nom}`"
       @fermer="reinitialisation = null"
     >
       <form id="form-reinit" class="grille-formulaire" @submit.prevent="enregistrerReinitialisation">
         <div>
           <label class="obligatoire">Nouveau mot de passe</label>
-          <ChampMotDePasse v-model="reinitialisation.motDePasse" obligatoire placeholder="8 caractères, lettres et chiffres" />
+          <ChampMotDePasse v-model="reinitialisation.motDePasse" obligatoire />
         </div>
         <div>
           <label class="obligatoire">Confirmation</label>
-          <ChampMotDePasse v-model="reinitialisation.confirmation" obligatoire placeholder="Retapez le mot de passe" />
+          <ChampMotDePasse v-model="reinitialisation.confirmation" obligatoire />
         </div>
-        <p class="aide pleine-largeur">L'ancien mot de passe ne fonctionnera plus.</p>
+        <p class="aide pleine-largeur">L'ancien mot de passe de « {{ reinitialisation.utilisateur.matricule }} » ne fonctionnera plus.</p>
       </form>
       <template #pied>
         <button class="bouton-secondaire" @click="reinitialisation = null">Fermer</button>
-        <button type="submit" form="form-reinit" :disabled="enregistrement">
-          {{ enregistrement ? 'Enregistrement…' : 'Enregistrer' }}
-        </button>
+        <button type="submit" form="form-reinit" :disabled="enregistrement">Enregistrer</button>
       </template>
     </FenetreModale>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useStore } from 'vuex'
 import FenetreModale from '@/components/FenetreModale.vue'
+import ListeDeroulante from '@/components/ListeDeroulante.vue'
+import ChampMotDePasse from '@/components/ChampMotDePasse.vue'
 import ImportExportTableau from '@/components/ImportExportTableau.vue'
 import Pagination from '@/components/Pagination.vue'
 import ColonneTri from '@/components/ColonneTri.vue'
-import ListeDeroulante from '@/components/ListeDeroulante.vue'
-import ChampMotDePasse from '@/components/ChampMotDePasse.vue'
+import Avatar from '@/components/Avatar.vue'
 import { utiliserTableau } from '@/utils/pagination'
 import { confirmer } from '@/utils/alertes'
 import { dateHeure } from '@/utils/format'
-import { DESCRIPTIONS_ROLES, LISTE_ROLES, ROLES } from '@/utils/roles'
-import { reinitialiserMotDePasse } from '@/api/parametrage'
+import { creerCompte, modifierCompte, reinitialiserMotDePasse, verifierMotDePasse } from '@/api/utilisateurs'
+
+const props = defineProps({
+  comptes: { type: Array, required: true },
+  personnel: { type: Array, required: true },
+  profils: { type: Array, required: true },
+})
+const emit = defineEmits(['modifie'])
 
 const store = useStore()
-const moi = computed(() => store.state.auth.utilisateur ?? {})
+const moi = computed(() => store.state.auth.utilisateur || {})
 
 const recherche = ref('')
-const roleFiltre = ref(null)
+const profilFiltre = ref(null)
 const afficherInactifs = ref(false)
-const chargement = ref(false)
 const enregistrement = ref(false)
 const formulaire = ref(null)
 const reinitialisation = ref(null)
 
-const comptes = computed(() => store.state.referentiel.utilisateurs)
-const fonctions = computed(() => store.state.referentiel.fonctions)
+const listeProfils = computed(() => props.profils.map((p) => ({ id: p.code, libelle: p.libelle })))
+/** Profil Administrateur proposé seulement à un administrateur. */
+const profilsProposes = computed(() => listeProfils.value.filter((p) => p.id !== 'ADMIN' || moi.value.role === 'ADMIN'))
+const profilChoisi = computed(() => props.profils.find((p) => p.code === formulaire.value?.role))
 
 const comptesAffiches = computed(() => {
   const texte = recherche.value.toLowerCase()
-  return comptes.value.filter((u) => {
+  return props.comptes.filter((u) => {
     if (!afficherInactifs.value && !u.actif) return false
-    if (roleFiltre.value && u.role !== roleFiltre.value) return false
+    if (profilFiltre.value && u.role !== profilFiltre.value) return false
     if (!texte) return true
-    return [u.nom, u.prenoms, u.matricule].some((v) => (v || '').toLowerCase().includes(texte))
+    return [u.nom, u.prenoms, u.matricule, u.fonction?.libelle].some((v) => (v || '').toLowerCase().includes(texte))
   })
 })
 
-const initiales = (u) => [u.prenoms, u.nom].filter(Boolean).map((m) => m[0]).join('').slice(0, 2)
+/** Personnel actif sans compte (pour « Nouveau compte »). */
+const personnelSansCompte = computed(() => props.personnel.filter((p) => p.actif && p.comptes.length === 0))
 
-/** Vérifie les règles du mot de passe (les mêmes que le serveur). */
-function verifierMotDePasse(motDePasse, confirmation) {
-  if (motDePasse.length < 8 || !/[A-Za-z]/.test(motDePasse) || !/\d/.test(motDePasse)) {
-    return 'Le mot de passe doit contenir au moins 8 caractères, dont une lettre et un chiffre.'
-  }
-  if (motDePasse !== confirmation) return 'La confirmation ne correspond pas au mot de passe.'
-  return null
-}
-
-async function charger() {
-  chargement.value = true
-  try {
-    await Promise.all([
-      store.dispatch('referentiel/charger', { liste: 'utilisateurs' }),
-      store.dispatch('referentiel/charger', { liste: 'fonctions' }),
-    ])
-  } catch (erreur) {
-    store.dispatch('notifications/erreurApi', erreur)
-  } finally {
-    chargement.value = false
-  }
-}
+const identifiantAffiche = computed(() => {
+  const f = formulaire.value
+  if (!f) return ''
+  if (f.id) return f.matricule
+  return personnelSansCompte.value.find((p) => p.id === f.personnelId)?.matricule || '— choisir la personne —'
+})
 
 function ouvrirFormulaire(u = null) {
-  formulaire.value = u
-    ? { ...u }
-    : { matricule: '', nom: '', prenoms: '', fonctionId: null, telephone: '', email: '', role: 'AGENT', motDePasse: '', confirmation: '' }
+  formulaire.value = u ? { ...u } : { personnelId: null, role: 'AGENT', motDePasse: '', confirmation: '' }
 }
 
 async function enregistrer() {
   const f = formulaire.value
-  if (!f.id) {
-    const probleme = verifierMotDePasse(f.motDePasse, f.confirmation)
-    if (probleme) return store.dispatch('notifications/erreur', probleme)
-  }
   enregistrement.value = true
   try {
-    const element = f.id
-      ? { id: f.id, nom: f.nom, prenoms: f.prenoms, fonctionId: f.fonctionId, telephone: f.telephone, email: f.email, role: f.role }
-      : {
-          matricule: f.matricule,
-          nom: f.nom,
-          prenoms: f.prenoms,
-          fonctionId: f.fonctionId,
-          telephone: f.telephone,
-          email: f.email,
-          role: f.role,
-          motDePasse: f.motDePasse,
-        }
-    await store.dispatch('referentiel/enregistrer', { liste: 'utilisateurs', element })
-    store.dispatch('notifications/succes', f.id ? 'Compte modifié.' : 'Compte créé.')
-    if (f.id) formulaire.value = null
-    else ouvrirFormulaire()
-    await charger()
+    if (f.id) {
+      await modifierCompte(f.id, { role: f.role })
+      store.dispatch('notifications/succes', 'Compte modifié.')
+      formulaire.value = null
+    } else {
+      if (!f.personnelId) return store.dispatch('notifications/erreur', 'Choisissez le membre du personnel.')
+      const probleme = verifierMotDePasse(f.motDePasse, f.confirmation)
+      if (probleme) return store.dispatch('notifications/erreur', probleme)
+      await creerCompte({ personnelId: f.personnelId, role: f.role, motDePasse: f.motDePasse })
+      store.dispatch('notifications/succes', 'Compte créé.')
+      ouvrirFormulaire()
+    }
+    emit('modifie')
   } catch (erreur) {
     store.dispatch('notifications/erreurApi', erreur)
   } finally {
@@ -304,8 +278,8 @@ async function enregistrer() {
   }
 }
 
-function ouvrirReinitialisation(u) {
-  reinitialisation.value = { utilisateur: u, motDePasse: '', confirmation: '' }
+function ouvrirReinitialisation(utilisateur) {
+  reinitialisation.value = { utilisateur, motDePasse: '', confirmation: '' }
 }
 
 async function enregistrerReinitialisation() {
@@ -325,71 +299,61 @@ async function enregistrerReinitialisation() {
 }
 
 async function changerActif(u) {
-  const nom = [u.prenoms, u.nom].filter(Boolean).join(' ')
+  const nom = `${u.prenoms || ''} ${u.nom}`.trim()
   const confirme = await confirmer({
     titre: u.actif ? 'Désactiver ce compte ?' : 'Réactiver ce compte ?',
-    texte: u.actif ? `${nom} ne pourra plus se connecter.` : nom,
+    texte: u.actif ? `« ${nom} » ne pourra plus se connecter.` : `« ${nom} » pourra de nouveau se connecter.`,
     boutonConfirmer: u.actif ? 'Oui, désactiver' : 'Oui, réactiver',
     danger: u.actif,
   })
   if (!confirme) return
   try {
-    await store.dispatch('referentiel/changerActif', { liste: 'utilisateurs', element: u, actif: !u.actif })
+    await modifierCompte(u.id, { actif: !u.actif })
     store.dispatch('notifications/succes', u.actif ? 'Compte désactivé.' : 'Compte réactivé.')
-    await charger()
+    emit('modifie')
   } catch (erreur) {
     store.dispatch('notifications/erreurApi', erreur)
   }
 }
 
-const COLONNES_PDF = [
-  { titre: 'Matricule', valeur: (u) => u.matricule },
-  { titre: 'Nom et prénoms', valeur: (u) => [u.nom, u.prenoms].filter(Boolean).join(' ') },
-  { titre: 'Fonction', valeur: (u) => u.fonction?.libelle },
-  { titre: 'Rôle', valeur: (u) => ROLES[u.role] ?? u.role },
-  { titre: 'Téléphone', valeur: (u) => u.telephone },
-  { titre: 'Dernière connexion', valeur: (u) => (u.derniereConnexion ? dateHeure(u.derniereConnexion) : 'Jamais') },
-  { titre: 'Statut', valeur: (u) => (u.actif ? 'Actif' : 'Inactif') },
-]
-
+// ---------------------------------------------------------------------------
+// Tri, pagination, PDF
+// ---------------------------------------------------------------------------
 const VALEURS_TRI = {
-  utilisateur: (u) => `${u.nom} ${u.prenoms ?? ''}`,
+  utilisateur: (u) => `${u.nom} ${u.prenoms || ''}`,
   fonction: (u) => u.fonction?.libelle,
-  role: (u) => ROLES[u.role],
-  connexion: (u) => u.derniereConnexion,
+  profil: (u) => u.roleLibelle,
+  connexion: (u) => u.derniereConnexion || '',
   statut: (u) => (u.actif ? 'Actif' : 'Inactif'),
 }
 const { tri, lignesTriees, page, taille, lignesPage } = utiliserTableau(
   comptesAffiches,
-  [recherche, roleFiltre, afficherInactifs],
+  [recherche, profilFiltre, afficherInactifs],
   VALEURS_TRI,
 )
 
-onMounted(charger)
+const COLONNES_PDF = [
+  { titre: 'Identifiant', valeur: (u) => u.matricule },
+  { titre: 'Nom et prénoms', valeur: (u) => `${u.nom} ${u.prenoms || ''}`.trim() },
+  { titre: 'Fonction', valeur: (u) => u.fonction?.libelle },
+  { titre: 'Profil', valeur: (u) => u.roleLibelle },
+  { titre: 'Téléphone', valeur: (u) => u.telephone },
+  { titre: 'Dernière connexion', valeur: (u) => (u.derniereConnexion ? dateHeure(u.derniereConnexion) : 'Jamais') },
+  { titre: 'Statut', valeur: (u) => (u.actif ? 'Actif' : 'Inactif') },
+]
 </script>
 
 <style scoped>
-.personne {
+.contact { font-size: 0.85rem; }
+.personne { display: flex; align-items: center; gap: 0.6rem; }
+.vous { margin-left: 0.4rem; }
+.titulaire {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.8rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--primary-light);
 }
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--primary));
-}
-.vous {
-  margin-left: 0.4rem;
-}
-.contact {
-  font-size: 0.85rem;
-}
+.titulaire small { display: block; color: var(--muted); }
 </style>

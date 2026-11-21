@@ -116,7 +116,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import EnteteModule from '@/components/EnteteModule.vue'
-import { GESTION_STOCK } from '@/utils/roles'
 import { confirmer, demanderTexte } from '@/utils/alertes'
 import { date, dateHeure, montant } from '@/utils/format'
 import { ficheDispensationPdf, uniteLigne as unite } from './dispensationCommun'
@@ -126,7 +125,7 @@ const store = useStore()
 const router = useRouter()
 
 const d = ref(null)
-const peutAnnuler = computed(() => store.getters['auth/peut'](GESTION_STOCK))
+const peutAnnuler = computed(() => store.getters['auth/peutValider']('dispensation'))
 const impression = ref(false)
 
 /** Fiche de dispensation en PDF (même présentation que les documents du district). */

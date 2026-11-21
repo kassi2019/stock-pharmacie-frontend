@@ -31,7 +31,10 @@ const dateDuJour = new Date().toLocaleDateString('fr-FR', {
 
 /** Tous les modules ; « autorise » = le profil connecté y a accès (sinon tuile grisée). */
 const tousLesModules = computed(() =>
-  MODULES.map((m) => ({ ...m, autorise: store.getters['auth/peut'](m.roles) })),
+  MODULES.filter((m) => m.tuile !== false).map((m) => ({
+    ...m,
+    autorise: [m.route, ...(m.accesAussi ?? [])].some((code) => store.getters['auth/peutVoir'](code)),
+  })),
 )
 /**
  * Sur téléphone (§ 17) : seulement les modules du mobile auxquels le profil a accès
@@ -73,7 +76,7 @@ const indicateurs = computed(() => {
       libelle: 'Produits actifs',
       valeur: nombre(i.produitsActifs ?? 0),
       unite: 'produits',
-      lien: { name: 'produits' },
+      lien: { name: 'parametres', query: { onglet: 'medicaments' } },
     },
   ]
   if (i.stock) {
@@ -85,7 +88,7 @@ const indicateurs = computed(() => {
         i.stock.valeurAchat !== undefined
           ? `Au prix d'achat · ${nombre(i.stock.valeurVente)} FCFA au prix de vente`
           : 'Au prix de vente',
-      lien: { name: 'produits' },
+      lien: { name: 'parametres', query: { onglet: 'medicaments' } },
     })
   }
   if (i.alertes) {
@@ -104,7 +107,7 @@ const indicateurs = computed(() => {
           .filter(Boolean)
           .join(' · ') || 'Aucune alerte',
       couleur: a.total > 0 ? 'rouge' : '',
-      lien: { name: 'produits' },
+      lien: { name: 'parametres', query: { onglet: 'medicaments' } },
     })
   }
   if (i.receptions) {
@@ -268,7 +271,7 @@ onUnmounted(() => clearInterval(minuterie))
     <template v-if="voitStock && exemples">
       <router-link
         v-if="accueil.indicateurs.alertes.lotsPerimes > 0"
-        :to="{ name: 'peremptions' }"
+        :to="{ name: 'retraits', query: { onglet: 'peremptions' } }"
         class="bandeau-perimes"
       >
         <Icone nom="attention" :taille="22" />
@@ -280,7 +283,7 @@ onUnmounted(() => clearInterval(minuterie))
       </router-link>
 
       <section class="alertes">
-        <router-link :to="{ name: 'produits' }" class="alertes-titre">
+        <router-link :to="{ name: 'parametres', query: { onglet: 'medicaments' } }" class="alertes-titre">
           <Icone nom="attention" :taille="18" /> Alertes stock
           <span class="compteurs-alertes">
             <span v-if="accueil.indicateurs.alertes.ruptures" class="c-rouge">
@@ -434,11 +437,12 @@ onUnmounted(() => clearInterval(minuterie))
   --espace: 1.25rem;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--espace);
 }
 .grande-tuile {
-  width: calc((100% - 4 * var(--espace)) / 5);
+  /* 4 tuiles par ligne : 8 modules = 4 en haut, 4 en bas */
+  width: calc((100% - 3 * var(--espace)) / 4);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -749,9 +753,9 @@ onUnmounted(() => clearInterval(minuterie))
 }
 
 /* ─── Écrans plus petits : moins de tuiles par ligne ─── */
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
   .grande-tuile {
-    width: calc((100% - 2 * var(--espace)) / 3);
+    width: calc((100% - var(--espace)) / 2);
   }
 }
 @media (max-width: 800px) {

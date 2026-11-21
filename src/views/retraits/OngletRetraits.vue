@@ -1,6 +1,6 @@
 <!--
   =============================================================================
-  MODULE — RETRAITS DE LOTS (§ 10.2)
+  ONGLET « RETRAITS » du module Lots, péremptions et retraits (§ 10.2)
   =============================================================================
   Rapport des retraits (période, motif) avec valeur au prix d'achat, export PDF.
   « Nouveau retrait » : lot, quantité, motif obligatoire (précision pour AUTRE).
@@ -9,14 +9,8 @@
   =============================================================================
 -->
 <template>
-  <div class="page">
-    <EnteteModule
-      icone="corbeille"
-      titre="Retraits de lots"
-      description="Retour fournisseur, périmé, casse, perte : chaque retrait diminue le stock du lot et reste tracé avec son motif."
-    />
-
-    <section class="bloc">
+  <div>
+    <div>
       <div class="barre-outils">
         <label class="champ-date">Du <ChampDate v-model="filtres.du" @change="charger" /></label>
         <label class="champ-date">Au <ChampDate v-model="filtres.au" @change="charger" /></label>
@@ -25,8 +19,8 @@
         </div>
         <span class="espace"></span>
         <ImportExportTableau titre="Rapport des retraits" :sous-titre="sousTitre" nom-fichier="retraits" :colonnes-pdf="COLONNES_PDF" :lignes="lignesTriees" />
-        <button v-si-modif class="bouton-secondaire" @click="retirerPerimes">Retirer les périmés</button>
-        <button v-si-modif @click="fenetre = true">+ Nouveau retrait</button>
+        <button v-si-modif="'retraits'" class="bouton-secondaire" @click="retirerPerimes">Retirer les périmés</button>
+        <button v-si-modif="'retraits'" @click="fenetre = true">+ Nouveau retrait</button>
       </div>
 
       <div class="totaux">
@@ -73,7 +67,7 @@
         <p v-if="!chargement && retraits.length === 0" class="tableau-vide">Aucun retrait sur la période.</p>
         <p v-if="chargement" class="tableau-vide">Chargement…</p>
       </div>
-    </section>
+    </div>
 
     <FenetreRetrait v-if="fenetre" @fermer="fenetre = false" @enregistre="apresRetrait" />
   </div>
@@ -82,7 +76,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
-import EnteteModule from '@/components/EnteteModule.vue'
 import ImportExportTableau from '@/components/ImportExportTableau.vue'
 import ListeDeroulante from '@/components/ListeDeroulante.vue'
 import Pagination from '@/components/Pagination.vue'
@@ -90,7 +83,6 @@ import ColonneTri from '@/components/ColonneTri.vue'
 import FenetreRetrait from '@/components/FenetreRetrait.vue'
 import { utiliserTableau } from '@/utils/pagination'
 import { confirmer } from '@/utils/alertes'
-import { PRIX_ACHAT } from '@/utils/roles'
 import { aujourdhui, date, dateHeure, montant, quantite } from '@/utils/format'
 
 const store = useStore()
@@ -101,7 +93,7 @@ const fenetre = ref(false)
 
 const retraits = computed(() => store.state.sorties.retraits)
 const motifs = computed(() => store.state.sorties.motifs)
-const voitValeur = computed(() => store.getters['auth/peut'](PRIX_ACHAT))
+const voitValeur = computed(() => store.getters['auth/voitPrixAchat'])
 const totalValeur = computed(() => retraits.value.reduce((s, r) => s + Number(r.valeur), 0))
 const parMotif = computed(() => {
   const n = {}
@@ -179,11 +171,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
 .champ-date {
   display: inline-flex;
   align-items: center;

@@ -25,6 +25,8 @@ const ADRESSES = {
   fonctions: '/fonctions',
   medicaments: '/produits',
   utilisateurs: '/utilisateurs',
+  profils: '/profils',
+  personnel: '/personnel',
 }
 
 export default {
@@ -38,6 +40,8 @@ export default {
     fonctions: [],
     medicaments: [],
     utilisateurs: [],
+    profils: [],
+    personnel: [],
   }),
 
   mutations: {

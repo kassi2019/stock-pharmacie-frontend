@@ -490,10 +490,10 @@ const {
 // AUTRES RAPPORTS (déjà dans leurs modules)
 // =============================================================================
 const AUTRES = [
-  { titre: 'Rapport des retraits', texte: 'Retours, casse, pertes, périmés — par période et par motif', icone: 'corbeille', lien: { name: 'retraits' } },
-  { titre: 'Péremptions proches', texte: 'Lots qui périment dans le délai d’alerte, valorisés', icone: 'calendrier', lien: { name: 'peremptions' } },
-  { titre: 'Ruptures et sous stock', texte: 'Produits en stock bas et quantité conseillée à commander', icone: 'attention', lien: { name: 'alertes', query: { onglet: 'stock-bas' } } },
-  { titre: 'Mouvements', texte: 'Toutes les entrées, sorties, retraits et correctifs', icone: 'fleches', lien: { name: 'mouvements' } },
+  { titre: 'Rapport des retraits', texte: 'Retours, casse, pertes, périmés — par période et par motif', icone: 'corbeille', lien: { name: 'retraits', query: { onglet: 'historique' } } },
+  { titre: 'Péremptions proches', texte: 'Lots qui périment dans le délai d’alerte, valorisés', icone: 'calendrier', lien: { name: 'retraits', query: { onglet: 'peremptions' } } },
+  { titre: 'Ruptures et sous stock', texte: 'Produits en stock bas et quantité conseillée à commander', icone: 'attention', lien: { name: 'retraits', query: { onglet: 'stock-bas' } } },
+  { titre: 'Mouvements', texte: 'Toutes les entrées, sorties, retraits et correctifs', icone: 'fleches', lien: { name: 'inventaires', query: { onglet: 'mouvements' } } },
   { titre: "Écarts d'inventaire", texte: 'Inventaires validés et rapport des écarts valorisés', icone: 'liste', lien: { name: 'inventaires' } },
   { titre: 'Dispensations', texte: 'Ventes par période, annulations, montants', icone: 'sortie', lien: { name: 'dispensation' } },
 ]

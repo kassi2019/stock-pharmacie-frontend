@@ -2,10 +2,8 @@
  * =============================================================================
  * DROITS PAR MODULE (côté écran) — même principe que l'application de district
  * =============================================================================
- * Ici les droits viennent du RÔLE (cahier des charges § 5) :
- *   - VOIR      : rôles listés dans « roles » du module (src/utils/modules.js) ;
- *   - MODIFIER  : rôles listés dans « rolesModif » (par défaut ADMIN et RESPONSABLE) ;
- *   - IMPRIMER  : tous ceux qui voient le module.
+ * Les droits viennent du PROFIL de l'utilisateur (Paramétrage > Profils & droits) :
+ * pour chaque module, VOIR / IMPRIMER / MODIFIER (et VALIDER pour certains).
  *
  * Sur un bouton qui MODIFIE des données (Nouveau, Modifier, Importer…) :
  *     <button v-si-modif @click="...">+ Nouveau</button>
@@ -21,7 +19,9 @@ import router from '@/router'
 /** Module de la page affichée (ex. 'parametres'), ou null sur l'accueil. */
 function moduleCourant() {
   const route = router.currentRoute.value
-  return route.meta?.module || route.name || null
+  // Page à onglets dont certains onglets ont leurs propres droits (ex. Paramétrage > Médicaments)
+  const parOnglet = route.meta?.modulesParOnglet?.[route.query?.onglet]
+  return parOnglet || route.meta?.module || route.name || null
 }
 
 function directiveDeDroit(getter) {

@@ -80,7 +80,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useStore } from 'vuex'
 import FenetreModale from '@/components/FenetreModale.vue'
 import ListeDeroulante from '@/components/ListeDeroulante.vue'
-import { PRIX_ACHAT } from '@/utils/roles'
 import { aujourdhui, date, montant, quantite } from '@/utils/format'
 
 const props = defineProps({
@@ -109,7 +108,7 @@ const libelleMaximum = computed(() =>
 )
 const estPerime = computed(() => !!lotChoisi.value && String(lotChoisi.value.datePeremption).slice(0, 10) < aujourdhui())
 const estAutre = computed(() => f.value.motif === 'AUTRE')
-const voitValeur = computed(() => store.getters['auth/peut'](PRIX_ACHAT))
+const voitValeur = computed(() => store.getters['auth/voitPrixAchat'])
 
 /** Quantité maximale dans l'unité choisie. */
 const maximum = computed(() => {
